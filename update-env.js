@@ -27,8 +27,8 @@ DISCORD_BOT_TOKEN=your_discord_bot_token_here
 PORT=3000
 
 # Supabase Configuration
-SUPABASE_URL=https://snkeusvyeztkpktxnxnr.supabase.co
-SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNua2V1c3Z5ZXp0a3BrdHhueG5yIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk5MzAxOTQsImV4cCI6MjA3NTUwNjE5NH0._c2BVeVz6NlrIfvjGTVsQLh1mfleq0QAu0kJPKrpALo
+SUPABASE_URL=your_supabase_url_here
+SUPABASE_ANON_KEY=your_supabase_anon_key_here
 `;
 }
 

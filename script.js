@@ -9,17 +9,33 @@ let completedTasks = {
 let currentOAuthState = null;
 let currentTwitterUserId = null;
 
-// Discord server invite link
-const DISCORD_INVITE_LINK = 'https://discord.com/invite/Xc54PrHv7w';
+// Discord server invite link - will be fetched from server
+let DISCORD_INVITE_LINK = 'https://discord.com/invite/Xc54PrHv7w'; // Default fallback
 
 // Initialize the application
 document.addEventListener('DOMContentLoaded', function() {
+    loadConfig();
     updateProgress();
     loadTaskStates();
     checkOAuthResults();
     checkUserStatus();
     checkExistingConnections();
 });
+
+// Load configuration from server
+async function loadConfig() {
+    try {
+        const response = await fetch('/api/config');
+        const config = await response.json();
+        
+        if (config.discordInviteLink) {
+            DISCORD_INVITE_LINK = config.discordInviteLink;
+            console.log('✅ Loaded Discord invite link from server:', DISCORD_INVITE_LINK);
+        }
+    } catch (error) {
+        console.log('⚠️ Could not load config from server, using default Discord invite link');
+    }
+}
 
 // Check user's current status from database
 async function checkUserStatus() {

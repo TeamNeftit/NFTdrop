@@ -33,6 +33,7 @@ const DISCORD_CLIENT_SECRET = process.env.DISCORD_CLIENT_SECRET;
 const DISCORD_REDIRECT_URI = process.env.DISCORD_REDIRECT_URI || 'http://localhost:3000/auth/discord/callback';
 const DISCORD_GUILD_ID = process.env.DISCORD_GUILD_ID;
 const DISCORD_BOT_TOKEN = process.env.DISCORD_BOT_TOKEN;
+const DISCORD_INVITE_LINK = process.env.DISCORD_INVITE_LINK || 'https://discord.com/invite/Xc54PrHv7w';
 const NEFTIT_X_USERNAME = process.env.NEFTIT_X_USERNAME || 'neftitxyz';
 
 // Supabase Configuration
@@ -924,6 +925,13 @@ app.get('/auth/discord/callback', async (req, res) => {
 });
 
 // API Routes
+app.get('/api/config', (req, res) => {
+    res.json({
+        discordInviteLink: DISCORD_INVITE_LINK,
+        neftitUsername: NEFTIT_X_USERNAME
+    });
+});
+
 app.get('/api/users', async (req, res) => {
     if (!supabase) {
         return res.status(503).json({ error: 'Database not available' });
