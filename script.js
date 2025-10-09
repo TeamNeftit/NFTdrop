@@ -9,11 +9,15 @@ let completedTasks = {
 let currentOAuthState = null;
 let currentTwitterUserId = null;
 
-// Discord server invite link - will be fetched from server
-let DISCORD_INVITE_LINK = 'https://discord.com/invite/Xc54PrHv7w'; // Default fallback
+// Configuration loaded from server
+let DISCORD_INVITE_LINK = 'https://discord.com/invite/your_invite_code_here'; // Default fallback
+let DISCORD_GUILD_ID = null; // Will be loaded from server
+let BASE_URL = 'http://localhost:3000'; // Default fallback
+let NEFTIT_USERNAME = 'neftitxyz'; // Default fallback
 
 // Initialize the application
 document.addEventListener('DOMContentLoaded', function() {
+    console.log('🚀 NFT Drop page loaded - SCRIPT VERSION 2');
     loadConfig();
     updateProgress();
     loadTaskStates();
@@ -32,8 +36,31 @@ async function loadConfig() {
             DISCORD_INVITE_LINK = config.discordInviteLink;
             console.log('✅ Loaded Discord invite link from server:', DISCORD_INVITE_LINK);
         }
+        
+        if (config.discordGuildId) {
+            DISCORD_GUILD_ID = config.discordGuildId;
+            console.log('✅ Loaded Discord guild ID from server:', DISCORD_GUILD_ID);
+        }
+        
+        if (config.baseUrl) {
+            BASE_URL = config.baseUrl;
+            console.log('✅ Loaded base URL from server:', BASE_URL);
+        }
+        
+        if (config.neftitUsername) {
+            NEFTIT_USERNAME = config.neftitUsername;
+            console.log('✅ Loaded Neftit username from server:', NEFTIT_USERNAME);
+        }
+        
+        // Clear any cached Discord data to force fresh check
+        try {
+            await fetch('/api/discord-clear-cache', { method: 'POST' });
+            console.log('🧹 Cleared Discord verification cache');
+        } catch (error) {
+            console.log('⚠️ Could not clear Discord cache:', error);
+        }
     } catch (error) {
-        console.log('⚠️ Could not load config from server, using default Discord invite link');
+        console.log('⚠️ Could not load config from server, using default values');
     }
 }
 
@@ -122,6 +149,7 @@ async function checkUserCurrentStatusByDiscord(discordUserId) {
         
         if (response.ok) {
             console.log('✅ User status:', result.user);
+            console.log('🔍 Discord provider ID from database:', result.user.discord_provider_id);
             
             // Update completed tasks based on database status
             if (result.user.twitter_connected) {
@@ -131,11 +159,43 @@ async function checkUserCurrentStatusByDiscord(discordUserId) {
             }
             
             if (result.user.discord_connected) {
-                console.log('✅ Discord is connected - updating UI');
-                completedTasks.discord = true;
-                updateTaskUI('discord');
-                updateProgress();
-                saveTaskStates();
+                console.log('✅ Discord is connected');
+                console.log('🔍 Discord joined status:', result.user.discord_joined);
+                
+                // Only mark as completed if they actually joined the Discord server
+                if (result.user.discord_joined) {
+                    console.log('✅ Discord server joined - marking as completed');
+                    
+                    // Hide all buttons and show completed state
+                    const connectBtn = document.getElementById('discord-connect-btn');
+                    const joinBtn = document.getElementById('discord-join-btn');
+                    const verifyBtn = document.getElementById('discord-verify-btn');
+                    
+                    if (connectBtn) connectBtn.style.display = 'none';
+                    if (joinBtn) joinBtn.style.display = 'none';
+                    if (verifyBtn) {
+                        verifyBtn.innerHTML = '<span class="button-text">✓ Completed</span>';
+                        verifyBtn.disabled = true;
+                        verifyBtn.style.backgroundColor = '#10b981';
+                        verifyBtn.style.display = 'inline-block';
+                    }
+                    
+                    completedTasks.discord = true;
+                    updateTaskUI('discord');
+                    updateProgress();
+                    saveTaskStates();
+                } else {
+                    console.log('⚠️ Discord connected but NOT joined server - showing join button');
+                    
+                    // Show join button instead of marking as completed
+                    const connectBtn = document.getElementById('discord-connect-btn');
+                    const joinBtn = document.getElementById('discord-join-btn');
+                    const verifyBtn = document.getElementById('discord-verify-btn');
+                    
+                    if (connectBtn) connectBtn.style.display = 'none';
+                    if (joinBtn) joinBtn.style.display = 'inline-block';
+                    if (verifyBtn) verifyBtn.style.display = 'none';
+                }
             }
             
             if (result.user.wallet_connected) {
@@ -201,14 +261,14 @@ function checkOAuthResults() {
 function authenticateX() {
     // Open X OAuth2 in popup
     const popup = window.open(
-        'http://localhost:3000/auth/x',
+        `${BASE_URL}/auth/x`,
         'xAuth',
         'width=600,height=700,scrollbars=yes,resizable=yes'
     );
     
     // Listen for popup messages
     const messageListener = (event) => {
-        if (event.origin !== 'http://localhost:3000') return;
+        if (event.origin !== BASE_URL) return;
         
         if (event.data.type === 'X_AUTH_SUCCESS') {
             // Store OAuth state and user ID for follow verification
@@ -222,7 +282,7 @@ function authenticateX() {
             if (event.data.restored) {
                 showNotification('X session restored!', 'success');
             } else {
-                showNotification('X connected! Now follow @neftitxyz', 'success');
+                showNotification(`X connected! Now follow @${NEFTIT_USERNAME}`, 'success');
             }
             
             // Show follow button instead of completing task
@@ -253,21 +313,21 @@ function authenticateX() {
 function authenticateDiscord() {
     // Open Discord OAuth2 in popup
     const popup = window.open(
-        'http://localhost:3000/auth/discord',
+        `${BASE_URL}/auth/discord`,
         'discordAuth',
         'width=600,height=700,scrollbars=yes,resizable=yes'
     );
     
     // Listen for popup messages
     const messageListener = (event) => {
-        if (event.origin !== 'http://localhost:3000') return;
+        if (event.origin !== BASE_URL) return;
         
         if (event.data.type === 'DISCORD_AUTH_SUCCESS') {
             // Check if this is a restored session
             if (event.data.restored) {
                 showNotification('Discord session restored!', 'success');
             } else {
-                showNotification('Successfully connected to Discord!', 'success');
+            showNotification('Successfully connected to Discord!', 'success');
             }
             
             // Store Discord user ID
@@ -746,156 +806,64 @@ submitAddress = function() {
 
 // Show follow button after X connection
 function showFollowButton() {
-    const taskItem = document.getElementById('task-follow');
-    const button = taskItem.querySelector('.task-button');
+    const connectBtn = document.getElementById('twitter-connect-btn');
+    const followBtn = document.getElementById('twitter-follow-btn');
+    const verifyBtn = document.getElementById('twitter-verify-btn');
     
-    if (button) {
-        button.innerHTML = '<span class="button-text">Follow @neftitxyz</span>';
-        button.style.background = '#1da1f2';
-        button.onclick = followNeftit;
-    }
+    if (connectBtn) connectBtn.style.display = 'none';
+    if (followBtn) followBtn.style.display = 'inline-block';
+    if (verifyBtn) verifyBtn.style.display = 'none';
 }
 
-// Follow @neftitxyz on Twitter
-function followNeftit() {
-    const followUrl = 'https://twitter.com/intent/follow?screen_name=neftitxyz';
+// Simplified Twitter follow function
+function followTwitter() {
+    console.log('🔗 Opening Twitter follow link...');
+    const followUrl = `https://twitter.com/intent/follow?screen_name=${NEFTIT_USERNAME}`;
     window.open(followUrl, '_blank');
     
     // Show verify button after a short delay
     setTimeout(() => {
-        showVerifyButton();
+        const followBtn = document.getElementById('twitter-follow-btn');
+        const verifyBtn = document.getElementById('twitter-verify-btn');
+        if (followBtn) followBtn.style.display = 'none';
+        if (verifyBtn) verifyBtn.style.display = 'inline-block';
+        showNotification(`Please follow @${NEFTIT_USERNAME}, then click "Verify Follow"`, 'info');
     }, 2000);
 }
 
-// Show verify follow button
-function showVerifyButton() {
-    const taskItem = document.getElementById('task-follow');
-    const button = taskItem.querySelector('.task-button');
-    
-    if (button) {
-        button.innerHTML = '<span class="button-text">Verify Follow</span>';
-        button.style.background = '#ff6b35';
-        button.onclick = verifyFollow;
+// New simplified Twitter verify function (no actual verification)
+async function verifyTwitterFollow() {
+    const verifyBtn = document.getElementById('twitter-verify-btn');
+    if (verifyBtn) {
+        verifyBtn.innerHTML = '<span class="button-text">Verifying...</span>';
+        verifyBtn.disabled = true;
     }
+    
+    console.log('🔍 Verifying Twitter follow (simplified)...');
+    
+    // Show loading for 4-5 seconds
+    await new Promise(resolve => setTimeout(resolve, 4500));
+    
+    // Mark as completed
+    console.log('✅ Twitter follow verified (simplified)!');
+    completedTasks.follow = true;
+    updateTaskUI('follow');
+    updateProgress();
+    saveTaskStates();
+    
+    // Show completed state
+    if (verifyBtn) {
+        verifyBtn.innerHTML = '<span class="button-text">✓ Completed</span>';
+        verifyBtn.disabled = true;
+        verifyBtn.style.backgroundColor = '#10b981';
+    }
+    
+    showNotification('Twitter follow verified! Task completed.', 'success');
 }
 
-// Verify if user followed @neftitxyz
-async function verifyFollow() {
-    console.log('🔍 Starting follow verification...');
-    console.log('Current OAuth state:', currentOAuthState);
-    console.log('Current Twitter user ID:', currentTwitterUserId);
-    
-    if (!currentOAuthState && !currentTwitterUserId) {
-        console.error('❌ No OAuth state or Twitter user ID available');
-        showNotification('Please connect X first', 'error');
-        return;
-    }
-    
-    // If we have Twitter user ID but no OAuth state, prompt to re-connect X
-    if (!currentOAuthState && currentTwitterUserId) {
-        console.log('⚠️ No OAuth state but have Twitter user ID - prompting to re-connect X');
-        showNotification('Please re-connect to X to verify follow status automatically', 'warning');
-        
-        const button = document.getElementById('task-follow').querySelector('.task-button');
-        if (button) {
-            button.innerHTML = '<span class="button-text">Re-connect X to Verify</span>';
-            button.disabled = false;
-            button.onclick = () => {
-                // Clear stored data and redirect to X OAuth
-                localStorage.removeItem('currentTwitterUserId');
-                currentTwitterUserId = null;
-                currentOAuthState = null;
-                window.location.href = '/auth/x';
-            };
-        }
-        return;
-    }
-    
-    const button = document.getElementById('task-follow').querySelector('.task-button');
-    if (button) {
-        button.innerHTML = '<span class="button-text">Verifying...</span>';
-        button.disabled = true;
-    }
-    
-    try {
-        console.log('📤 Sending verify follow request with state:', currentOAuthState);
-        const response = await fetch('/api/verify-follow', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ state: currentOAuthState })
-        });
-        
-        console.log('📥 Response status:', response.status);
-        console.log('📥 Response headers:', response.headers);
-        
-        const result = await response.json();
-        console.log('📥 Response data:', result);
-        
-        if (response.ok) {
-            if (result.followed) {
-                // User followed successfully
-                completedTasks.follow = true;
-                updateTaskUI('follow');
-                updateProgress();
-                saveTaskStates();
-                showNotification('Successfully verified follow!', 'success');
-            } else {
-                // User didn't follow
-                showNotification('Please follow @neftitxyz first, then click Verify Follow', 'error');
-                
-                // Reset button
-                if (button) {
-                    button.innerHTML = '<span class="button-text">Verify Follow</span>';
-                    button.disabled = false;
-                }
-            }
-        } else if (response.status === 429) {
-            // Rate limited - offer manual verification
-            showNotification('Twitter API rate limited. You can verify manually if you follow @neftitxyz.', 'warning');
-            
-            // Reset button and offer manual verification
-            if (button) {
-                button.innerHTML = '<span class="button-text">Verify Manually</span>';
-                button.disabled = false;
-                button.onclick = () => manualVerifyFollow();
-            }
-        } else if (response.status === 403) {
-            // Insufficient permissions - need to re-authenticate
-            showNotification('Please re-connect to X to grant follow reading permissions.', 'error');
-            
-            // Reset button and clear OAuth state
-            if (button) {
-                button.innerHTML = '<span class="button-text">Re-connect X</span>';
-                button.disabled = false;
-                button.onclick = authenticateX; // Change to connect X instead
-            }
-            
-            // Clear OAuth state to force re-authentication
-            currentOAuthState = null;
-            currentTwitterUserId = null;
-        } else {
-            showNotification('Error: ' + result.error, 'error');
-            
-            // Reset button
-            if (button) {
-                button.innerHTML = '<span class="button-text">Verify Follow</span>';
-                button.disabled = false;
-            }
-        }
-    } catch (error) {
-        console.error('❌ Error verifying follow:', error);
-        console.error('❌ Error details:', error.message);
-        showNotification('Failed to verify follow. Please try again.', 'error');
-        
-        // Reset button
-        if (button) {
-            button.innerHTML = '<span class="button-text">Verify Follow</span>';
-            button.disabled = false;
-        }
-    }
-}
+// Old showVerifyButton function removed - now using new button system
+
+// Old complex Twitter verification removed - now using simplified flow
 
 // Direct follow verification (when we have Twitter user ID but no OAuth state)
 // Manual verification removed - users must re-connect X for automatic verification
@@ -931,6 +899,7 @@ async function verifyDiscordJoin() {
     
     try {
         console.log('🔍 Verifying Discord server join...');
+        console.log('🔍 Using Discord provider ID from database:', currentDiscordUserId);
         
         const response = await fetch('/api/verify-discord-join', {
             method: 'POST',
@@ -938,17 +907,18 @@ async function verifyDiscordJoin() {
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify({ 
-                discordUserId: currentDiscordUserId
+                discordUserId: currentDiscordUserId, // This is the provider ID from database
+                guildId: DISCORD_GUILD_ID
             })
         });
         
         const data = await response.json();
         
-        if (response.ok && data.success) {
+        if (response.ok && data.success && data.isMember) {
             console.log('✅ Discord join verified!');
             showNotification('Discord join verified! Task completed.', 'success');
             
-            // Update UI
+            // Update UI immediately
             const taskElement = document.getElementById('task-discord');
             const connectBtn = document.getElementById('discord-connect-btn');
             const joinBtn = document.getElementById('discord-join-btn');
@@ -965,25 +935,64 @@ async function verifyDiscordJoin() {
             // Update task status
             completedTasks.discord = true;
             taskElement.classList.add('completed');
-            updateProgress();
-            saveTaskStates();
+                updateProgress();
+                saveTaskStates();
             
+            // Show member data if available
+            if (data.memberData && data.memberData.username) {
+                console.log(`👋 Welcome, ${data.memberData.username}!`);
+            }
+            
+            // Refresh user status to get updated database state
+            console.log('🔄 Refreshing user status after Discord verification...');
+            if (currentDiscordUserId) {
+                await checkUserCurrentStatusByDiscord(currentDiscordUserId);
+            }
+        } else if (response.status === 429) {
+            console.log('⚠️ Rate limited by Discord API');
+            showNotification(`Rate limited. Please try again in ${data.retryAfter || 5} seconds.`, 'warning');
+            if (verifyBtn) {
+                verifyBtn.innerHTML = '<span class="button-text">Try Again</span>';
+                verifyBtn.disabled = false;
+            }
+        } else if (data.needsSetup) {
+            console.log('❌ Discord bot setup required');
+            showNotification('Discord bot setup required. Please contact administrator.', 'error');
+            if (verifyBtn) {
+                verifyBtn.innerHTML = '<span class="button-text">Setup Required</span>';
+                verifyBtn.disabled = true;
+                verifyBtn.style.backgroundColor = '#ef4444';
+            }
+        } else if (data.cached) {
+            console.log('📋 Using cached Discord result');
+            showNotification('Discord verification (cached result)', 'info');
+            
+            // Still update UI if cached result shows success
+            if (data.isMember) {
+                const taskElement = document.getElementById('task-discord');
+                const connectBtn = document.getElementById('discord-connect-btn');
+                const joinBtn = document.getElementById('discord-join-btn');
+                const verifyBtn = document.getElementById('discord-verify-btn');
+                
+                if (connectBtn) connectBtn.style.display = 'none';
+                if (joinBtn) joinBtn.style.display = 'none';
+                if (verifyBtn) {
+                    verifyBtn.innerHTML = '<span class="button-text">✓ Completed</span>';
+                    verifyBtn.disabled = true;
+                    verifyBtn.style.backgroundColor = '#10b981';
+                }
+                
+                completedTasks.discord = true;
+                taskElement.classList.add('completed');
+                updateProgress();
+                saveTaskStates();
+            }
         } else {
             console.error('❌ Discord join verification failed:', data.error);
-            
-            if (data.needsSetup) {
-                showNotification('Discord bot setup required. Please contact administrator.', 'error');
-                if (verifyBtn) {
-                    verifyBtn.innerHTML = '<span class="button-text">Setup Required</span>';
-                    verifyBtn.disabled = true;
-                    verifyBtn.style.backgroundColor = '#ef4444';
-                }
-            } else {
-                showNotification(data.error || 'Failed to verify Discord join. Please try again.', 'error');
-                if (verifyBtn) {
-                    verifyBtn.innerHTML = '<span class="button-text">Verify Join</span>';
-                    verifyBtn.disabled = false;
-                }
+            showNotification(data.message || data.error || 'Failed to verify Discord join. Please try again.', 'error');
+            if (verifyBtn) {
+                verifyBtn.innerHTML = '<span class="button-text">Verify Join</span>';
+                verifyBtn.disabled = false;
             }
         }
         

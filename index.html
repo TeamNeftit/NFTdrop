@@ -21,19 +21,21 @@
             <div class="tasks">
                 <h3>Complete simple tasks to be eligible for first NFT Drop</h3>
                 
-                <div class="task" id="task-follow">
-                    <div class="task-info">
-                        <h4>- Follow neftit on X</h4>
-                        <button class="task-button" onclick="authenticateX()">Connect X</button>
-                    </div>
-                </div>
-
                 <div class="task" id="task-discord">
                     <div class="task-info">
                         <h4>- Join neftit Discord</h4>
                         <button class="task-button" id="discord-connect-btn" onclick="authenticateDiscord()">Connect Discord</button>
                         <button class="task-button" id="discord-join-btn" onclick="joinDiscordServer()" style="display: none; margin-top: 10px;">Join Discord Server</button>
                         <button class="task-button" id="discord-verify-btn" onclick="verifyDiscordJoin()" style="display: none; margin-top: 10px;">Verify Join</button>
+                    </div>
+                </div>
+
+                <div class="task" id="task-follow">
+                    <div class="task-info">
+                        <h4>- Follow neftit on X</h4>
+                        <button class="task-button" id="twitter-connect-btn" onclick="authenticateX()">Connect X</button>
+                        <button class="task-button" id="twitter-follow-btn" onclick="followTwitter()" style="display: none; margin-top: 10px;">Follow X</button>
+                        <button class="task-button" id="twitter-verify-btn" onclick="verifyTwitterFollow()" style="display: none; margin-top: 10px;">Verify Follow</button>
                     </div>
                 </div>
 
@@ -80,6 +82,6 @@
         </div>
     </div>
 
-    <script src="script.js"></script>
+    <script src="script.js?v=2"></script>
 </body>
 </html>
