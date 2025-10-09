@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>OAuth Debug Tool</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #000;
+            color: #fff;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .debug-section {
+            margin: 20px 0;
+            padding: 20px;
+            border: 1px solid #333;
+            border-radius: 8px;
+            background: #111;
+        }
+        .debug-btn {
+            background: #1da1f2;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin: 10px 5px;
+        }
+        .debug-btn:hover {
+            background: #0d8bd9;
+        }
+        .result {
+            margin: 10px 0;
+            padding: 15px;
+            background: #222;
+            border-radius: 4px;
+            border-left: 4px solid #1da1f2;
+        }
+        .error {
+            border-left-color: #ff4444;
+        }
+        .success {
+            border-left-color: #44ff44;
+        }
+        .warning {
+            border-left-color: #ffaa44;
+        }
+        .code {
+            background: #333;
+            padding: 10px;
+            border-radius: 4px;
+            font-family: monospace;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔧 X OAuth2 Debug Tool</h1>
+    
+    <div class="debug-section">
+        <h2>1. Server Status</h2>
+        <button class="debug-btn" onclick="checkServer()">Check Server</button>
+        <div id="server-result" class="result"></div>
+    </div>
+    
+    <div class="debug-section">
+        <h2>2. OAuth Configuration</h2>
+        <button class="debug-btn" onclick="checkOAuthConfig()">Check OAuth Config</button>
+        <div id="oauth-result" class="result"></div>
+    </div>
+    
+    <div class="debug-section">
+        <h2>3. Test OAuth URL Generation</h2>
+        <button class="debug-btn" onclick="testOAuthURL()">Generate OAuth URL</button>
+        <div id="url-result" class="result"></div>
+    </div>
+    
+    <div class="debug-section">
+        <h2>4. Common Issues Checklist</h2>
+        <div id="checklist-result" class="result">
+            <h3>✅ Check These Settings in X Developer Portal:</h3>
+            <ul>
+                <li><strong>App Type:</strong> "Web App, Automated App or Bot" (Confidential client)</li>
+                <li><strong>Redirect URI:</strong> Must be exactly: <code>http://localhost:3000/auth/x/callback</code></li>
+                <li><strong>Permissions:</strong> "Read and write" (to follow users)</li>
+                <li><strong>OAuth 2.0:</strong> Must be enabled</li>
+                <li><strong>Client ID:</strong> Use the OAuth 2.0 Client ID (not API Key)</li>
+                <li><strong>Client Secret:</strong> Use the OAuth 2.0 Client Secret (not API Secret Key)</li>
+            </ul>
+            
+            <h3>🔍 Common Issues:</h3>
+            <ul>
+                <li><strong>Wrong App Type:</strong> Make sure it's "Web App" not "Native App"</li>
+                <li><strong>URI Mismatch:</strong> Redirect URI must match exactly (including http vs https)</li>
+                <li><strong>Wrong Credentials:</strong> Using API Key instead of Client ID</li>
+                <li><strong>OAuth 2.0 Disabled:</strong> Make sure OAuth 2.0 is enabled in app settings</li>
+                <li><strong>Missing Permissions:</strong> App needs "Read and write" permissions</li>
+            </ul>
+        </div>
+    </div>
+    
+    <div class="debug-section">
+        <h2>5. Manual OAuth Test</h2>
+        <button class="debug-btn" onclick="testManualOAuth()">Test Manual OAuth</button>
+        <div id="manual-result" class="result"></div>
+    </div>
+
+    <script>
+        async function checkServer() {
+            try {
+                const response = await fetch('http://localhost:3000/health');
+                const data = await response.json();
+                document.getElementById('server-result').innerHTML = 
+                    `<div class="success">✅ Server is running<br>Status: ${data.status}<br>Timestamp: ${data.timestamp}</div>`;
+            } catch (error) {
+                document.getElementById('server-result').innerHTML = 
+                    `<div class="error">❌ Server error: ${error.message}</div>`;
+            }
+        }
+        
+        async function checkOAuthConfig() {
+            try {
+                const response = await fetch('http://localhost:3000/auth/x');
+                const text = await response.text();
+                
+                if (text.includes('Configuration Error')) {
+                    document.getElementById('oauth-result').innerHTML = 
+                        `<div class="error">❌ OAuth Configuration Error<br>Check your .env file and X Developer Portal settings</div>`;
+                } else if (text.includes('twitter.com/i/oauth2/authorize')) {
+                    document.getElementById('oauth-result').innerHTML = 
+                        `<div class="success">✅ OAuth endpoint is working<br>Response length: ${text.length} characters</div>`;
+                } else {
+                    document.getElementById('oauth-result').innerHTML = 
+                        `<div class="warning">⚠️ Unexpected response<br>Response length: ${text.length} characters</div>`;
+                }
+            } catch (error) {
+                document.getElementById('oauth-result').innerHTML = 
+                    `<div class="error">❌ OAuth endpoint error: ${error.message}</div>`;
+            }
+        }
+        
+        function testOAuthURL() {
+            const clientId = 'tODyYEPRkzeZA2vhnHvuSF6mc';
+            const redirectUri = 'http://localhost:3000/auth/x/callback';
+            const state = 'test-state-' + Math.random().toString(36).substr(2, 9);
+            
+            const authUrl = `https://twitter.com/i/oauth2/authorize?` +
+                `response_type=code&` +
+                `client_id=${clientId}&` +
+                `redirect_uri=${encodeURIComponent(redirectUri)}&` +
+                `scope=tweet.read%20users.read%20follows.write%20offline.access&` +
+                `state=${state}&` +
+                `code_challenge=challenge&` +
+                `code_challenge_method=plain`;
+            
+            document.getElementById('url-result').innerHTML = 
+                `<div class="success">✅ OAuth URL Generated<br>
+                <div class="code">${authUrl}</div>
+                <button class="debug-btn" onclick="window.open('${authUrl}', 'test', 'width=600,height=700')">Test This URL</button>
+                </div>`;
+        }
+        
+        function testManualOAuth() {
+            const popup = window.open('http://localhost:3000/auth/x', 'manualTest', 'width=600,height=700');
+            
+            // Listen for messages from popup
+            const messageListener = (event) => {
+                if (event.origin !== 'http://localhost:3000') return;
+                
+                if (event.data.type === 'X_AUTH_SUCCESS') {
+                    document.getElementById('manual-result').innerHTML = 
+                        `<div class="success">✅ OAuth Success!<br>User ID: ${event.data.userId}</div>`;
+                    popup.close();
+                    window.removeEventListener('message', messageListener);
+                } else if (event.data.type === 'X_AUTH_ERROR') {
+                    document.getElementById('manual-result').innerHTML = 
+                        `<div class="error">❌ OAuth Error: ${event.data.error}</div>`;
+                    popup.close();
+                    window.removeEventListener('message', messageListener);
+                }
+            };
+            
+            window.addEventListener('message', messageListener);
+            
+            document.getElementById('manual-result').innerHTML = 
+                `<div class="warning">⚠️ Popup opened. Check the popup window and watch for results here.</div>`;
+        }
+    </script>
+</body>
+</html>

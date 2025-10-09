@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>OAuth Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #000;
+            color: #fff;
+            padding: 20px;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 20px;
+            border: 1px solid #333;
+            border-radius: 8px;
+        }
+        .test-btn {
+            background: #1da1f2;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin: 10px;
+        }
+        .test-btn:hover {
+            background: #0d8bd9;
+        }
+        .result {
+            margin: 10px 0;
+            padding: 10px;
+            background: #111;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <h1>OAuth Configuration Test</h1>
+    
+    <div class="test-section">
+        <h2>1. Test Server Health</h2>
+        <button class="test-btn" onclick="testHealth()">Test Health</button>
+        <div id="health-result" class="result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>2. Test X OAuth URL</h2>
+        <button class="test-btn" onclick="testXOAuth()">Test X OAuth</button>
+        <div id="x-oauth-result" class="result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>3. Test Direct X Authorization</h2>
+        <button class="test-btn" onclick="testDirectX()">Open X Authorization</button>
+        <div id="direct-x-result" class="result"></div>
+    </div>
+
+    <script>
+        async function testHealth() {
+            try {
+                const response = await fetch('http://localhost:3000/health');
+                const data = await response.json();
+                document.getElementById('health-result').innerHTML = 
+                    `<strong>✅ Server is running</strong><br>Status: ${data.status}<br>Timestamp: ${data.timestamp}`;
+            } catch (error) {
+                document.getElementById('health-result').innerHTML = 
+                    `<strong>❌ Server error</strong><br>Error: ${error.message}`;
+            }
+        }
+        
+        async function testXOAuth() {
+            try {
+                const response = await fetch('http://localhost:3000/auth/x');
+                const text = await response.text();
+                document.getElementById('x-oauth-result').innerHTML = 
+                    `<strong>✅ X OAuth endpoint accessible</strong><br>Response length: ${text.length} characters`;
+            } catch (error) {
+                document.getElementById('x-oauth-result').innerHTML = 
+                    `<strong>❌ X OAuth error</strong><br>Error: ${error.message}`;
+            }
+        }
+        
+        function testDirectX() {
+            const popup = window.open('http://localhost:3000/auth/x', 'xTest', 'width=600,height=700');
+            document.getElementById('direct-x-result').innerHTML = 
+                `<strong>✅ Popup opened</strong><br>Check the popup window for X authorization`;
+        }
+    </script>
+</body>
+</html>

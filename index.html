@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Neftit - NFT Drop</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <h1 class="logo">neftit</h1>
+            <span class="status">Waitlist is closed now</span>
+        </header>
+
+            
+            <!-- Tasks -->
+            <div class="tasks">
+                <h3>Complete simple tasks to be eligible for first NFT Drop</h3>
+                
+                <div class="task" id="task-follow">
+                    <div class="task-info">
+                        <h4>- Follow neftit on X</h4>
+                        <button class="task-button" onclick="authenticateX()">Connect X</button>
+                    </div>
+                </div>
+
+                <div class="task" id="task-discord">
+                    <div class="task-info">
+                        <h4>- Join neftit Discord</h4>
+                        <button class="task-button" id="discord-connect-btn" onclick="authenticateDiscord()">Connect Discord</button>
+                        <button class="task-button" id="discord-join-btn" onclick="joinDiscordServer()" style="display: none; margin-top: 10px;">Join Discord Server</button>
+                        <button class="task-button" id="discord-verify-btn" onclick="verifyDiscordJoin()" style="display: none; margin-top: 10px;">Verify Join</button>
+                    </div>
+                </div>
+
+                <div class="task" id="task-address">
+                    <div class="task-info">
+                        <h4>- Enter your EVM address</h4>
+                        <div class="address-input">
+                            <input type="text" placeholder="0x..." id="evmAddress">
+                            <button class="submit-button" onclick="submitAddress()">Submit</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Rules -->
+            <div class="rules">
+                <h3>Rules</h3>
+                <p>- 3 rarities in drop</p>
+                <p>- Discord role holders have most chances to get high tier NFT</p>
+            </div>
+        </main>
+    </div>
+
+    <!-- Wallet Connection Modal -->
+    <div class="modal" id="walletModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Connect Your Wallet</h3>
+                <button class="close-button" onclick="closeModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p>Connect your wallet to complete the task</p>
+                <div class="wallet-options">
+                    <button class="wallet-option" onclick="connectMetaMask()">
+                        <i class="fab fa-ethereum"></i>
+                        <span>MetaMask</span>
+                    </button>
+                    <button class="wallet-option" onclick="connectWalletConnect()">
+                        <i class="fas fa-wallet"></i>
+                        <span>WalletConnect</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
