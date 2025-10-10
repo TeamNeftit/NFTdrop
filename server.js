@@ -5,7 +5,7 @@ const crypto = require('crypto');
 const { createClient } = require('@supabase/supabase-js');
 require('dotenv').config();
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3001;
 
 // Debug environment variables
 console.log('=== ENVIRONMENT VARIABLES DEBUG ===');
@@ -30,7 +30,7 @@ const X_REDIRECT_URI = process.env.X_REDIRECT_URI || 'http://localhost:3000/auth
 
 const DISCORD_CLIENT_ID = process.env.DISCORD_CLIENT_ID;
 const DISCORD_CLIENT_SECRET = process.env.DISCORD_CLIENT_SECRET;
-const DISCORD_REDIRECT_URI = process.env.DISCORD_REDIRECT_URI || 'http://localhost:3000/auth/discord/callback';
+const DISCORD_REDIRECT_URI = process.env.DISCORD_REDIRECT_URI || 'http://localhost:3000s/auth/discord/callback';
 const DISCORD_GUILD_ID = process.env.DISCORD_GUILD_ID;
 const DISCORD_BOT_TOKEN = process.env.DISCORD_BOT_TOKEN;
 const DISCORD_INVITE_LINK = process.env.DISCORD_INVITE_LINK || 'https://discord.com/invite/Xc54PrHv7w';
