@@ -14,7 +14,7 @@ function Footer() {
             <div className="footer-brand">
               <div className="brand-block">
                 <h2 className="brand-title">
-                  <img src="/NEFTIT FAVICON.png" alt="NEFTIT" className="brand-logo" />
+                  <img src="/images/NEFTIT FAVICON.png" alt="NEFTIT" className="brand-logo" />
                   NEFTIT
                 </h2>
                 <p className="brand-desc">
@@ -30,8 +30,8 @@ function Footer() {
               <div className="link-group">
                 <h3 className="link-title">COMPANY</h3>
                 <div className="link-list">
-                  <div className="footer-link">About Us</div>
-                  <div className="footer-link">Contact Us</div>
+                  <Link to="/docs/general/about_us" className="footer-link">About Us</Link>
+                  <Link to="/docs/appendix/contact-links" className="footer-link">Contact Us</Link>
                   {/*<Link to="/partnership" className="footer-link">Partnership</Link>*/}
                 </div>
               </div>
@@ -50,21 +50,21 @@ function Footer() {
               <div className="link-group">
                 <h3 className="link-title">SOCIAL</h3>
                 <div className="social-list">
-                  <a href="#" className="social-item">
-                    <img src="/x-social-media-round-icon.png" alt="Twitter" className="social-icon" />
+                  <a href="https://x.com/neftitxyz" target="_blank" rel="noopener noreferrer" className="social-item">
+                    <img src="/images/icons/x-social-media-round-icon.png" alt="Twitter" className="social-icon" />
                     <span className="social-text">Twitter</span>
                   </a>
-                  <a href="#" className="social-item">
-                    <img src="/discord-round-color-icon.png" alt="Discord" className="social-icon" />
+                  <a href="https://discord.gg/neftit" target="_blank" rel="noopener noreferrer" className="social-item">
+                    <img src="/images/icons/discord-round-color-icon.png" alt="Discord" className="social-icon" />
                     <span className="social-text">Discord</span>
                   </a>
-                  <a href="#" className="social-item">
-                    <img src="/telegram-icon.png" alt="Telegram" className="social-icon" />
+                  <a href="#" target="_blank" rel="noopener noreferrer" className="social-item">
+                    <img src="/images/icons/telegram-icon.png" alt="Telegram" className="social-icon" />
                     <span className="social-text">Telegram</span>
                   </a>
-                  <a href="#" className="social-item">
-                    <Linkedin size={16} className="social-icon-svg" />
-                    <span className="social-text--wide">LinkedIn</span>
+                  <a href="https://www.linkedin.com/company/neftit" target="_blank" rel="noopener noreferrer" className="social-item">
+                    <img src="/images/icons/linkedin_icon.png" alt="LinkedIn" className="social-icon" />
+                    <span className="social-text">LinkedIn</span>
                   </a>
                 </div>
               </div>
@@ -79,7 +79,7 @@ function Footer() {
           {/* Logo at bottom */}
           <div className="footer-logo-row">
             <img
-              src="/neftitFont.png"
+              src="/images/neftitFont.png"
               alt="NEFTIT"
               className="footer-logo-bottom"
             />

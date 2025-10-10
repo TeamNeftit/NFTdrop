@@ -20,6 +20,36 @@
   overflow-y: auto;
   background-color: #0B0A14;
   color: #ffffff;
+  scrollbar-width: thin;
+  scrollbar-color: #1e1e2d #0B0A14;
+}
+
+/* For Webkit browsers (Chrome, Safari, Edge) */
+.ds::-webkit-scrollbar {
+  width: 6px;
+}
+
+.ds::-webkit-scrollbar-track {
+  background: #0B0A14;
+}
+
+.ds::-webkit-scrollbar-thumb {
+  background-color: #1e1e2d;
+  border-radius: 3px;
+}
+
+.ds::-webkit-scrollbar-thumb:hover {
+  background-color: #2a2a3a;
+}
+
+/* Remove bullets from sidebar list items */
+.ds ul {
+  list-style-type: none;
+  padding-left: 0.5rem;
+}
+
+.ds li {
+  list-style: none;
 }
 .ds-header { display: flex; align-items: center; margin-bottom: 1.5rem; }
 .ds-title { font-size: 1.25rem; font-weight: 700; margin-left: 0.5rem; }

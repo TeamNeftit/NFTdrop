@@ -480,22 +480,16 @@ export default React.memo(function DocsLayout({ children }: { children: React.Re
   const memoizedHandleDocsNavigation = React.useCallback(enhancedHandleDocsNavigation, [enhancedHandleDocsNavigation]);
 
   // Sidebar sections (memoized)
-  const allSections = React.useMemo(() => [
-    {
-      label: "General",
-      links: [
-        { to: "/docs/overview", label: "Overview", searchableText: "general overview" },
-      ],
-    },
-    ...docsSidebar.map((section) => ({
+  const allSections = React.useMemo(() => 
+    docsSidebar.map((section) => ({
       label: section.title,
       links: section.items.map((item) => ({
         to: `/docs/${item.slug}`,
         label: item.title,
         searchableText: `${section.title} ${item.title}`.toLowerCase(),
       })),
-    })),
-  ], [docsSidebar]);
+    }))
+  , [docsSidebar]);
 
   return (
     <div className="docs-root">

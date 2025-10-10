@@ -1,4 +1,5 @@
 // src/pages/DocsRoutes.tsx
+import React from 'react';
 import { Route, Routes, Navigate, useLocation } from "react-router-dom";
 import { lazy, Suspense, useEffect } from 'react';
 import DocsLayout from "@/component/layout/DocsLayout";
@@ -72,21 +73,19 @@ export default function DocsRoutes() {
   const location = useLocation();
   const { handleDocsNavigation } = useDocsNavigation();
   
+  // Get the first general section item as the default route
+  const defaultRoute = docsSidebar[0]?.items[0]?.slug || 'general/overview';
+  
   // Handle the root /docs redirect efficiently
   useEffect(() => {
     if (location.pathname === '/docs' || location.pathname === '/docs/') {
-      handleDocsNavigation('/docs/overview');
+      handleDocsNavigation(`/docs/${defaultRoute}`);
     }
-  }, [location.pathname, handleDocsNavigation]);
+  }, [location.pathname, handleDocsNavigation, defaultRoute]);
   
   // Generate routes from docsSidebar
   const generateRoutes = () => {
-    const routes = [];
-    
-    // Add the overview route
-    routes.push(
-      <Route key="overview" path="overview" element={<MDXContent path="overview" />} />
-    );
+    const routes: React.ReactElement[] = [];
 
     // Add routes from docsSidebar
     docsSidebar.forEach(section => {
@@ -116,7 +115,7 @@ export default function DocsRoutes() {
         {generateRoutes()}
         
         {/* Fallback route */}
-        <Route path="*" element={<Navigate to="/docs/overview" replace />} />
+        <Route path="*" element={<Navigate to={`/docs/${defaultRoute}`} replace />} />
       </Routes>
     </DocsLayout>
   );

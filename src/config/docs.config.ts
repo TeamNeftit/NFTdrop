@@ -12,6 +12,13 @@ export interface SidebarItem {
   
   export const docsSidebar: SidebarSection[] = [
     {
+      title: "General",
+      items: [
+        { title: "Overview", slug: "general/overview" },
+        { title: "About Us", slug: "general/about_us" },
+      ],
+    },
+    {
       title: "Introduction",
       items: [
         { title: "Problems Targeted", slug: "introduction/problems-targeted" },

@@ -1,25 +1,25 @@
 /* Header */
 .header {
     height: 72px;
+    width: 100%;
     max-width: 1200px;
-    margin: auto;
+    margin: 0 auto 50px;
     display: flex;
-    justify-content: start;
+    justify-content: flex-start;
     align-items: center;
-    margin-bottom: 50px;
-    padding: 0px 10px;
-    border-bottom: 2px solid;
+    padding: 0 24px;  
     border-image: linear-gradient(to right, #5d43ef, #8a79ec) 1;
 }
 
 .logo {
     height: 26px;
     width: auto;
+    display: block;
 }
 
 .logo:hover {
     cursor: pointer;
-    transition: all 0.5s linear;
+    transition: all 0.2s ease;
     transform: scale(1.1);
 }
 

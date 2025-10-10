@@ -20,16 +20,8 @@ function Home() {
         </div>
         
 
-         <div className="tasks">
+        <div className="tasks">
         <h3>Complete simple tasks to be eligible for first NFT Drop</h3>
-
-        <div className="task" id="task-follow">
-          <div className="task-info">
-            <h4><span className='taskFollow'>{'->'}</span> Follow neftit on X</h4>
-            <button className="task-button btn1" onClick={call('authenticateX')}>Connect X</button>
-          </div>
-        </div>
-
         <div className="task" id="task-discord">
           <div className="task-info">
             <h4><span className='taskDiscord'>{'->'}</span> Join neftit Discord</h4>
@@ -39,6 +31,13 @@ function Home() {
           </div>
         </div>
 
+        <div className="task" id="task-follow">
+          <div className="task-info">
+            <h4><span className='taskFollow'>{'->'}</span> Follow neftit on X</h4>
+            <button className="task-button btn1" onClick={call('authenticateX')}>Connect X</button>
+          </div>
+        </div>
+       
         <div className="task" id="task-address">
           <div className="task-info">
             <h4><span className='taskAddress'>{'->'}</span> Enter your EVM address</h4>

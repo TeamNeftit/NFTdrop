@@ -44,9 +44,22 @@
 .dp-btn--left { justify-content: flex-start; }
 .dp-btn--right { justify-content: flex-end; }
 
-/* Hover background via parent link hover */
-.dp-link:hover .dp-btn {
+/* Button background */
+.dp-btn {
   background-color: rgba(93, 67, 239, 0.2); /* #5d43ef/20 */
+  border: 1px solid rgba(93, 67, 239, 0.2); /* #5d43ef/40 */
+  transition: all 0.2s ease;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 0.875rem; /* text-sm */
+  font-weight: 500; /* medium */
+  color: #ffffff;
+  border-radius: 0.375rem; /* rounded-md */
+  padding: 0.5rem 1rem;
+}
+
+/* Hover background */
+.dp-link:hover .dp-btn {
+  background-color: rgba(93, 67, 239, 0.3); /* Slightly darker on hover */
 }
 
 /* Icon styling */
