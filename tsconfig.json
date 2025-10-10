@@ -1,0 +1,35 @@
+{
+  "compilerOptions": {
+    // ✅ Environment
+    "target": "ESNext",
+    "module": "ESNext",
+    "lib": ["DOM", "DOM.Iterable", "ESNext"],
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"]
+    },
+
+    // ✅ Allow both JavaScript & TypeScript files
+    "allowJs": true,
+    "skipLibCheck": true,
+
+    // ✅ React & JSX support
+    "jsx": "react-jsx",
+
+    // ✅ Module resolution
+    "moduleResolution": "Node",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+
+    // ✅ Type checking rules
+    "strict": true,
+    "forceConsistentCasingInFileNames": true,
+
+    // ✅ Do not output compiled JS (Vite handles that)
+    "noEmit": true,
+    "types": ["vite/client"]
+  },
+  "include": ["src"]
+}
