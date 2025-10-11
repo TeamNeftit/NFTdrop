@@ -1,46 +1,50 @@
-
 import './Home.css'
 
 function Home() {
-    // Helper to call legacy globals safely
+  // Helper to call legacy globals safely
+  const call = (fn) => () => {
+    if (typeof window[fn] === 'function') {
+      window[fn]();
+    } else {
+      console.warn(`Global function ${fn} is not available yet.`);
+    }
+  };
 
-    const call = (fn) => () => {
-        if (typeof window[fn] === 'function') {
-          window[fn]()
-        } else {
-          console.warn(`Global function ${fn} is not available yet.`)
-        }
-      }
+  return (
+    <main>
 
-    return (
-       <main>
+      <div className="statusContainer">
+        <h1 className="status">WAITLIST IS CLOSED NOW!</h1>
+      </div>
 
-        <div className="statusContainer">
-            <h1 className="status">WAITLIST IS CLOSED NOW!</h1>
-        </div>
-        
+      <div className="tasks">
+        <h3>Complete simple tasks to be eligible for first NFTDROP</h3>
 
-        <div className="tasks">
-        <h3>Complete simple tasks to be eligible for first NFT Drop</h3>
-
+        {/* Follow X Task */}
         <div className="task" id="task-follow">
           <div className="task-info">
             <h4><span className='taskFollow'>{'->'}</span> Follow neftit on X</h4>
-            <button className="task-button btn1" onClick={call('authenticateX')}>Connect X</button>
-            <button className="task-button btn1" id="twitter-follow-btn" onClick={call('followTwitter')} style={{display: 'none', marginTop: 10}}>Follow X</button>
-            <button className="task-button btn1" id="twitter-verify-btn" onClick={call('verifyTwitterFollow')} style={{display: 'none', marginTop: 10}}>Verify Follow</button>
+            <div className="task-buttons">
+              <button className="task-button btn1" onClick={call('authenticateX')}>Connect X</button>
+              <button className="task-button btn1" id="twitter-follow-btn" onClick={call('followTwitter')} style={{display: 'none'}}>Follow X</button>
+              <button className="task-button btn1" id="twitter-verify-btn" onClick={call('verifyTwitterFollow')} style={{display: 'none'}}>Verify Follow</button>
+            </div>
           </div>
         </div>
 
+        {/* Join Discord Task */}
         <div className="task" id="task-discord">
           <div className="task-info">
             <h4><span className='taskDiscord'>{'->'}</span> Join neftit Discord</h4>
-            <button className="task-button btn2" id="discord-connect-btn" onClick={call('authenticateDiscord')}>Connect Discord</button>
-            <button className="task-button btn2" id="discord-join-btn" onClick={call('joinDiscordServer')} style={{ display: 'none', marginTop: 10 }}>Join Discord Server</button>
-            <button className="task-button btn2" id="discord-verify-btn" onClick={call('verifyDiscordJoin')} style={{ display: 'none', marginTop: 10 }}>Verify Join</button>
+            <div className="task-buttons">
+              <button className="task-button btn2" id="discord-connect-btn" onClick={call('authenticateDiscord')}>Connect Discord</button>
+              <button className="task-button btn2" id="discord-join-btn" onClick={call('joinDiscordServer')} style={{ display: 'none' }}>Join Discord Server</button>
+              <button className="task-button btn2" id="discord-verify-btn" onClick={call('verifyDiscordJoin')} style={{ display: 'none' }}>Verify Join</button>
+            </div>
           </div>
         </div>
 
+        {/* EVM Address Task */}
         <div className="task" id="task-address">
           <div className="task-info">
             <h4><span className='taskAddress'>{'->'}</span> Enter your EVM address</h4>
@@ -50,6 +54,7 @@ function Home() {
             </div>
           </div>
         </div>
+
       </div>
 
       {/* Rules */}
@@ -81,9 +86,9 @@ function Home() {
           </div>
         </div>
       </div>
-    
-       </main>
-    )
+
+    </main>
+  )
 }
 
 export default Home;
