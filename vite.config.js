@@ -17,11 +17,12 @@ export default defineConfig(async () => {
     ],
     server: {
       port: 3000,
+      strictPort: true, // ensures it never jumps to 3001 automatically
       open: true,
       host: true,
       proxy: {
-        '/api': 'http://localhost:3001',
-        '/auth': 'http://localhost:3001'
+        '/api': { target: 'http://127.0.0.1:3001', changeOrigin: true },
+        '/auth': { target: 'http://127.0.0.1:3001', changeOrigin: true },
       }
     },
     build: {

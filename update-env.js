@@ -10,9 +10,12 @@ try {
     console.log('📁 Found existing .env file');
 } catch (error) {
     console.log('📁 No .env file found, creating new one...');
-    envContent = `# X (Twitter) OAuth2 Configuration
+    envContent = `# Application Configuration
+BASE_URL=http://localhost:3000
+
+# X (Twitter) OAuth2 Configuration
 X_CLIENT_ID=tODyYEPRkzeZA2vhnHvuSF6mc
-X_CLIENT_SECRET=ZUczd4XcCNlDZ0tTokoeCrbdsEKeOAsnXPFpjNyutqK7h4s8VE
+X_CLIENT_SECRET=your_x_client_secret_here
 X_REDIRECT_URI=http://localhost:3000/auth/x/callback
 NEFTIT_X_USERNAME=neftitxyz
 

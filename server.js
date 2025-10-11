@@ -24,16 +24,17 @@ app.use(cors());
 app.use(express.json());
 
 // Configuration - All from .env file
+const BASE_URL = process.env.BASE_URL || 'http://localhost:3000';
 const X_CLIENT_ID = process.env.X_CLIENT_ID;
 const X_CLIENT_SECRET = process.env.X_CLIENT_SECRET;
-const X_REDIRECT_URI = process.env.X_REDIRECT_URI || 'http://localhost:3000/auth/x/callback';
+const X_REDIRECT_URI = process.env.X_REDIRECT_URI || `${BASE_URL}/auth/x/callback`;
 
 const DISCORD_CLIENT_ID = process.env.DISCORD_CLIENT_ID;
 const DISCORD_CLIENT_SECRET = process.env.DISCORD_CLIENT_SECRET;
-const DISCORD_REDIRECT_URI = process.env.DISCORD_REDIRECT_URI || 'http://localhost:3000/auth/discord/callback';
+const DISCORD_REDIRECT_URI = process.env.DISCORD_REDIRECT_URI || `${BASE_URL}/auth/discord/callback`;
 const DISCORD_GUILD_ID = process.env.DISCORD_GUILD_ID;
 const DISCORD_BOT_TOKEN = process.env.DISCORD_BOT_TOKEN;
-const DISCORD_INVITE_LINK = process.env.DISCORD_INVITE_LINK || 'https://discord.com/invite/Xc54PrHv7w';
+const DISCORD_INVITE_LINK = process.env.DISCORD_INVITE_LINK || 'https://discord.com/invite/your_invite_code_here';
 const NEFTIT_X_USERNAME = process.env.NEFTIT_X_USERNAME || 'neftitxyz';
 
 // Supabase Configuration
@@ -374,7 +375,7 @@ app.get('/auth/x/callback', async (req, res) => {
                             type: 'X_AUTH_ERROR',
                             error: '${error}',
                             description: '${error_description || ''}'
-                        }, 'http://localhost:3000');
+                        }, '${BASE_URL}');
                         window.close();
                     </script>
                 </body>
@@ -393,7 +394,7 @@ app.get('/auth/x/callback', async (req, res) => {
                         window.opener.postMessage({
                             type: 'X_AUTH_ERROR',
                             error: 'No authorization code'
-                        }, 'http://localhost:3000');
+                        }, '${BASE_URL}');
                         window.close();
                     </script>
                 </body>
@@ -412,7 +413,7 @@ app.get('/auth/x/callback', async (req, res) => {
                         window.opener.postMessage({
                             type: 'X_AUTH_ERROR',
                             error: 'Invalid state'
-                        }, 'http://localhost:3000');
+                        }, '${BASE_URL}');
                         window.close();
                     </script>
                 </body>
@@ -449,17 +450,37 @@ app.get('/auth/x/callback', async (req, res) => {
         console.log('🔵 Token response:', tokenResponse.data);
         const { access_token } = tokenResponse.data;
         
-        // Skip user info call to avoid rate limits - create user directly
-        console.log('🔵 Skipping user info call to avoid rate limits');
+        // Try to get user info first, but fallback to direct creation if rate limited
+        let userId, userData;
         
-        const userId = 'twitter_user_' + Date.now();
-        const userData = {
-            id: userId,
-            username: 'twitter_user',
-            email: null
-        };
+        try {
+            console.log('🔵 Attempting to get user info from Twitter API...');
+        const userResponse = await axios.get('https://api.twitter.com/2/users/me', {
+            headers: {
+                'Authorization': `Bearer ${access_token}`
+            }
+        });
         
-        console.log('🔵 Using direct user creation:', userData);
+            userData = userResponse.data.data;
+            userId = userData.id; // Use actual Twitter user ID
+            console.log('🔵 Got user info from Twitter API:', userData);
+            
+        } catch (userError) {
+            console.log('🔵 User info call failed, using fallback approach');
+            console.log('🔵 Error:', userError.response?.data || userError.message);
+            
+            // Fallback: create a consistent user ID based on access token hash
+            const crypto = require('crypto');
+            const tokenHash = crypto.createHash('md5').update(access_token).digest('hex').substring(0, 16);
+            userId = 'twitter_' + tokenHash;
+            userData = {
+                id: userId,
+                username: 'twitter_user',
+                email: null
+            };
+            
+            console.log('🔵 Using fallback user creation:', userData);
+        }
         
         // Store access token for follow verification later
         stateData = stateStore.get(state);
@@ -514,7 +535,7 @@ app.get('/auth/x/callback', async (req, res) => {
                                         window.opener.postMessage({
                                             type: 'X_AUTH_ERROR',
                                             error: 'Account already connected with wallet'
-                                        }, 'http://localhost:3000');
+                                        }, '${BASE_URL}');
                                         window.close();
                                     </script>
                                 </body>
@@ -552,7 +573,7 @@ app.get('/auth/x/callback', async (req, res) => {
                                             userId: '${userId}',
                                             state: '${state}',
                                             restored: true
-                                        }, 'http://localhost:3000');
+                                        }, '${BASE_URL}');
                                         window.close();
                                     </script>
                                     <p>Session restored! You can close this window.</p>
@@ -561,34 +582,87 @@ app.get('/auth/x/callback', async (req, res) => {
                         `);
                     }
                 } else {
-                    // New connection - proceed normally
-                    console.log('🔵 New Twitter connection - creating new user');
-                    console.log('🔵 User data to insert:', {
-                        twitter_provider_id: userId,
-                        twitter_username: userData.username,
-                        twitter_email: userData.email || null,
-                        twitter_connected_at: new Date().toISOString(),
-                        twitter_social_address: socialAddress
-                    });
+                    // New connection - check if there's an existing user without Twitter
+                    console.log('🔍 No Twitter account found, checking for existing user without Twitter...');
                     
-                    const { data: newUser, error: createError } = await supabase
+                    // Look for existing user without Twitter connection
+                    const { data: existingUserWithoutTwitter, error: queryError2 } = await supabase
                         .from('users')
-                        .insert({
+                        .select('id, twitter_provider_id, discord_provider_id, wallet_address')
+                        .is('twitter_provider_id', null)
+                        .order('created_at', { ascending: true })
+                        .limit(1)
+                        .single();
+                    
+                    if (existingUserWithoutTwitter && !existingUserWithoutTwitter.wallet_address) {
+                        // Found existing user without Twitter - update it
+                        console.log('🔄 Found existing user without Twitter - updating with Twitter data');
+                        
+                        const { error: updateError } = await supabase
+                            .from('users')
+                            .update({
+                                twitter_provider_id: userId,
+                                twitter_username: userData.username,
+                                twitter_email: userData.email || null,
+                                twitter_connected_at: new Date().toISOString(),
+                                twitter_social_address: socialAddress,
+                                updated_at: new Date().toISOString()
+                            })
+                            .eq('id', existingUserWithoutTwitter.id);
+                        
+                        if (updateError) {
+                            throw updateError;
+                        }
+                        
+                        console.log('✅ Twitter data added to existing user');
+                        
+                        // Send success with existing user ID
+                        return res.send(`
+                            <html>
+                                <body>
+                                    <script>
+                                        window.opener.postMessage({
+                                            type: 'X_AUTH_SUCCESS',
+                                            userId: '${userId}',
+                                            state: '${state}',
+                                            restored: true
+                                        }, '${BASE_URL}');
+                                        window.close();
+                                    </script>
+                                    <p>Twitter connected to existing account! You can close this window.</p>
+                                </body>
+                            </html>
+                        `);
+                    } else {
+                        // No existing user found - create new user
+                        console.log('🔵 Creating new user with Twitter data');
+                        console.log('🔵 User data to insert:', {
                             twitter_provider_id: userId,
                             twitter_username: userData.username,
                             twitter_email: userData.email || null,
                             twitter_connected_at: new Date().toISOString(),
                             twitter_social_address: socialAddress
-                        })
-                        .select('id')
-                        .single();
-                    
-                    if (createError) {
-                        console.error('🔵 Create user error:', createError);
-                        throw createError;
+                        });
+                        
+                        const { data: newUser, error: createError } = await supabase
+                            .from('users')
+                            .insert({
+                                twitter_provider_id: userId,
+                                twitter_username: userData.username,
+                                twitter_email: userData.email || null,
+                                twitter_connected_at: new Date().toISOString(),
+                                twitter_social_address: socialAddress
+                            })
+                            .select('id')
+                            .single();
+                        
+                        if (createError) {
+                            console.error('🔵 Create user error:', createError);
+                            throw createError;
+                        }
+                        
+                        console.log('🔵 New user created with ID:', newUser.id);
                     }
-                    
-                    console.log('🔵 New user created with ID:', newUser.id);
                 }
             } catch (dbError) {
                 console.error('❌ Database error:', dbError);
@@ -603,7 +677,7 @@ app.get('/auth/x/callback', async (req, res) => {
                                 window.opener.postMessage({
                                     type: 'X_AUTH_ERROR',
                                     error: '${dbError.message}'
-                                }, 'http://localhost:3000');
+                                }, '${BASE_URL}');
                                 window.close();
                             </script>
                         </body>
@@ -621,7 +695,7 @@ app.get('/auth/x/callback', async (req, res) => {
                             window.opener.postMessage({
                                 type: 'X_AUTH_ERROR',
                                 error: 'Database not available'
-                            }, 'http://localhost:3000');
+                            }, '${BASE_URL}');
                             window.close();
                         </script>
                     </body>
@@ -640,7 +714,7 @@ app.get('/auth/x/callback', async (req, res) => {
                             type: 'X_AUTH_SUCCESS',
                             userId: '${userId}',
                             state: '${state}'
-                        }, 'http://localhost:3000');
+                        }, '${BASE_URL}');
                         window.close();
                     </script>
                     <p>Authentication successful! You can close this window.</p>
@@ -663,7 +737,7 @@ app.get('/auth/x/callback', async (req, res) => {
                         window.opener.postMessage({
                             type: 'X_AUTH_ERROR',
                             error: '${error.message}'
-                        }, 'http://localhost:3000');
+                        }, '${BASE_URL}');
                         window.close();
                     </script>
                 </body>
@@ -795,7 +869,7 @@ app.get('/auth/discord/callback', async (req, res) => {
                                         window.opener.postMessage({
                                             type: 'DISCORD_AUTH_ERROR',
                                             error: 'Account already connected with wallet'
-                                        }, 'http://localhost:3000');
+                                        }, '${BASE_URL}');
                                         window.close();
                                     </script>
                                 </body>
@@ -832,7 +906,7 @@ app.get('/auth/discord/callback', async (req, res) => {
                                             type: 'DISCORD_AUTH_SUCCESS',
                                             userId: '${userId}',
                                             restored: true
-                                        }, 'http://localhost:3000');
+                                        }, '${BASE_URL}');
                                         window.close();
                                     </script>
                                     <p>Session restored! You can close this window.</p>
@@ -841,26 +915,78 @@ app.get('/auth/discord/callback', async (req, res) => {
                         `);
                     }
                 } else {
-                    // New connection - create new user with Discord
-                    console.log('✅ New Discord connection - creating new user');
+                    // New connection - check if there's an existing user without Discord
+                    console.log('🔍 No Discord account found, checking for existing user without Discord...');
                     
-                    const { data: newUser, error: createError } = await supabase
+                    // Look for existing user without Discord connection
+                    const { data: existingUserWithoutDiscord, error: queryError2 } = await supabase
                         .from('users')
-                        .insert({
-                            discord_provider_id: userId,
-                            discord_username: userData.username,
-                            discord_email: userData.email || null,
-                            discord_connected_at: new Date().toISOString(),
-                            discord_social_address: socialAddress
-                        })
-                        .select('id')
+                        .select('id, twitter_provider_id, discord_provider_id, wallet_address')
+                        .is('discord_provider_id', null)
+                        .order('created_at', { ascending: true })
+                        .limit(1)
                         .single();
                     
-                    if (createError) {
-                        throw createError;
+                    if (existingUserWithoutDiscord && !existingUserWithoutDiscord.wallet_address) {
+                        // Found existing user without Discord - update it
+                        console.log('🔄 Found existing user without Discord - updating with Discord data');
+                        
+                        const { error: updateError } = await supabase
+                            .from('users')
+                            .update({
+                                discord_provider_id: userId,
+                                discord_username: userData.username,
+                                discord_email: userData.email || null,
+                                discord_connected_at: new Date().toISOString(),
+                                discord_social_address: socialAddress,
+                                updated_at: new Date().toISOString()
+                            })
+                            .eq('id', existingUserWithoutDiscord.id);
+                        
+                        if (updateError) {
+                            throw updateError;
+                        }
+                        
+                        console.log('✅ Discord data added to existing user');
+                        
+                        // Send success with existing user ID
+                        return res.send(`
+                            <html>
+                                <body>
+                                    <script>
+                                        window.opener.postMessage({
+                                            type: 'DISCORD_AUTH_SUCCESS',
+                                            userId: '${userId}',
+                                            restored: true
+                                        }, '${BASE_URL}');
+                                        window.close();
+                                    </script>
+                                    <p>Discord connected to existing account! You can close this window.</p>
+                                </body>
+                            </html>
+                        `);
+                    } else {
+                        // No existing user found - create new user
+                        console.log('✅ Creating new user with Discord data');
+                        
+                        const { data: newUser, error: createError } = await supabase
+                            .from('users')
+                            .insert({
+                                discord_provider_id: userId,
+                                discord_username: userData.username,
+                                discord_email: userData.email || null,
+                                discord_connected_at: new Date().toISOString(),
+                                discord_social_address: socialAddress
+                            })
+                            .select('id')
+                            .single();
+                        
+                        if (createError) {
+                            throw createError;
+                        }
+                        
+                        console.log('✅ New user created with ID:', newUser.id);
                     }
-                    
-                    console.log('✅ New user created with ID:', newUser.id);
                 }
             } catch (dbError) {
                 console.error('❌ Database error:', dbError);
@@ -875,7 +1001,7 @@ app.get('/auth/discord/callback', async (req, res) => {
                                 window.opener.postMessage({
                                     type: 'DISCORD_AUTH_ERROR',
                                     error: '${dbError.message}'
-                                }, 'http://localhost:3000');
+                                }, '${BASE_URL}');
                                 window.close();
                             </script>
                         </body>
@@ -897,7 +1023,7 @@ app.get('/auth/discord/callback', async (req, res) => {
                         window.opener.postMessage({
                             type: 'DISCORD_AUTH_SUCCESS',
                             userId: '${userId}'
-                        }, 'http://localhost:3000');
+                        }, '${BASE_URL}');
                         window.close();
                     </script>
                     <p>Authentication successful! You can close this window.</p>
@@ -914,7 +1040,7 @@ app.get('/auth/discord/callback', async (req, res) => {
                         window.opener.postMessage({
                             type: 'DISCORD_AUTH_ERROR',
                             error: 'Authentication failed'
-                        }, 'http://localhost:3000');
+                        }, '${BASE_URL}');
                         window.close();
                     </script>
                     <p>Authentication failed! You can close this window.</p>
@@ -928,7 +1054,9 @@ app.get('/auth/discord/callback', async (req, res) => {
 app.get('/api/config', (req, res) => {
     res.json({
         discordInviteLink: DISCORD_INVITE_LINK,
-        neftitUsername: NEFTIT_X_USERNAME
+        neftitUsername: NEFTIT_X_USERNAME,
+        discordGuildId: DISCORD_GUILD_ID,
+        baseUrl: BASE_URL
     });
 });
 
@@ -1043,6 +1171,8 @@ app.get('/api/user-status-discord/:discordUserId', async (req, res) => {
                 twitter_username: user.twitter_username,
                 twitter_connected: !!user.twitter_provider_id,
                 discord_connected: !!user.discord_provider_id,
+                discord_provider_id: user.discord_provider_id, // Include the actual provider ID
+                discord_joined: !!user.discord_joined,
                 followed_neftit: false, // This will be handled by follow verification
                 wallet_connected: !!user.wallet_address,
                 created_at: user.created_at,
@@ -1061,7 +1191,7 @@ app.get('/api/stats', async (req, res) => {
     
     try {
         const { data: users, error } = await supabase
-            .from('users')
+                        .from('users')
             .select('twitter_provider_id, discord_provider_id, followed_neftit, wallet_address');
         
         if (error) {
@@ -1083,279 +1213,9 @@ app.get('/api/stats', async (req, res) => {
 });
 
 // Check if user follows @neftitxyz
-app.post('/api/verify-follow', async (req, res) => {
-    console.log('🔍 Verify follow request received');
-    console.log('Request body:', req.body);
-    console.log('State store size:', stateStore.size);
-    console.log('State store keys:', Array.from(stateStore.keys()));
-    
-    const { state } = req.body;
-    
-    if (!state) {
-        console.log('❌ No state provided in request');
-        return res.status(400).json({ error: 'No state parameter provided' });
-    }
-    
-    if (!stateStore.has(state)) {
-        console.log('❌ State not found in store:', state);
-        return res.status(400).json({ error: 'Invalid state parameter - state not found' });
-    }
-    
-    const stateData = stateStore.get(state);
-    console.log('📊 State data:', stateData);
-    
-    if (!stateData.accessToken || !stateData.userId) {
-        console.log('❌ Missing access token or user ID in state data');
-        return res.status(400).json({ error: 'No access token or user ID available' });
-    }
-    
-    try {
-        console.log('🔍 Checking if user follows @neftitxyz...');
-        console.log('User ID:', stateData.userId);
-        
-        // Get Neftit's user ID (with caching)
-        let neftitUserId;
-        try {
-            neftitUserId = await getNeftitUserId(stateData.accessToken);
-        } catch (neftitError) {
-            console.error('❌ Error getting Neftit user ID:', neftitError.response?.data || neftitError.message);
-            if (neftitError.response?.status === 429) {
-                return res.status(429).json({ 
-                    error: 'Rate limited by Twitter API',
-                    message: 'Please try again in a few minutes. Twitter API has rate limits.',
-                    retryAfter: neftitError.response.headers['x-rate-limit-reset'] || 900
-                });
-            }
-            throw neftitError;
-        }
-        
-        // Check if user follows Neftit using Twitter API v1.1 friendships/show endpoint
-        let isFollowing = false;
-        
-        try {
-            console.log('🔍 Checking if user follows @neftitxyz using friendships/show...');
-            
-            // Use Twitter API v1.1 friendships/show endpoint
-            // source_screen_name = user we're checking, target_screen_name = neftitxyz
-            const friendshipResponse = await axios.get('https://api.twitter.com/1.1/friendships/show.json', {
-            headers: {
-                'Authorization': `Bearer ${stateData.accessToken}`
-                },
-                params: {
-                    'source_screen_name': stateData.userId,  // The user we're checking
-                    'target_screen_name': 'neftitxyz'        // Our account
-                }
-            });
-            
-            console.log('📊 Friendship response:', friendshipResponse.data);
-            
-            // Check if the source user is following the target user (neftitxyz)
-            const relationship = friendshipResponse.data.relationship;
-            if (relationship && relationship.source) {
-                isFollowing = relationship.source.following === true;
-                console.log(`🎯 User ${isFollowing ? 'IS' : 'IS NOT'} following @neftitxyz`);
-            } else {
-                console.log('❌ No relationship data found');
-                isFollowing = false;
-            }
-            
-        } catch (friendshipError) {
-            console.log('❌ Error checking friendship:', friendshipError.response?.data || friendshipError.message);
-            
-            if (friendshipError.response?.status === 404) {
-                // 404 means user doesn't follow Neftit
-                isFollowing = false;
-                console.log('❌ User does not follow Neftit (404)');
-            } else if (friendshipError.response?.status === 429) {
-                return res.status(429).json({ 
-                    error: 'Rate limited by Twitter API',
-                    message: 'Please try again in a few minutes. Twitter API has rate limits.',
-                    retryAfter: friendshipError.response.headers['x-rate-limit-reset'] || 900
-                });
-            } else if (friendshipError.response?.status === 403) {
-                return res.status(403).json({ 
-                    error: 'Insufficient permissions',
-                    message: 'Please re-connect to X to grant follow reading permissions. Click "Connect X" again.',
-                    needsReauth: true
-                });
-            } else {
-                // For other errors, try to get the user's username first
-                console.log('🔄 Trying to get user info first...');
-                try {
-                    const userInfoResponse = await axios.get('https://api.twitter.com/2/users/me', {
-                        headers: {
-                            'Authorization': `Bearer ${stateData.accessToken}`
-                        }
-                    });
-                    
-                    const username = userInfoResponse.data.data.username;
-                    console.log(`👤 Got username: ${username}`);
-                    
-                    // Now try friendships/show with the username
-                    const friendshipResponse2 = await axios.get('https://api.twitter.com/1.1/friendships/show.json', {
-            headers: {
-                'Authorization': `Bearer ${stateData.accessToken}`
-            },
-            params: {
-                            'source_screen_name': username,  // The user we're checking
-                            'target_screen_name': 'neftitxyz'  // Our account
-                        }
-                    });
-                    
-                    const relationship = friendshipResponse2.data.relationship;
-                    if (relationship && relationship.source) {
-                        isFollowing = relationship.source.following === true;
-                        console.log(`🎯 User ${isFollowing ? 'IS' : 'IS NOT'} following @neftitxyz (retry)`);
-                    } else {
-                        isFollowing = false;
-                    }
-                    
-                } catch (retryError) {
-                    console.error('❌ Error in retry attempt:', retryError.response?.data || retryError.message);
-                    throw retryError;
-                }
-            }
-        }
-        
-        console.log(`🎯 Final result: User ${isFollowing ? 'IS' : 'IS NOT'} following @neftitxyz`);
-        
-        // Update database with follow status
-            if (supabase) {
-                try {
-                const { error: updateError } = await supabase
-                        .from('users')
-                        .update({
-                        followed_neftit: isFollowing,
-                            updated_at: new Date().toISOString()
-                        })
-                        .eq('twitter_provider_id', stateData.userId);
-                    
-                if (updateError) {
-                    console.error('❌ Database update error:', updateError);
-                } else {
-                    console.log('✅ Database updated with follow status');
-                }
-                } catch (dbError) {
-                console.error('❌ Database error:', dbError);
-                }
-            }
-            
-        // Clean up state after verification
-            stateStore.delete(state);
-            
-        if (isFollowing) {
-            res.json({ 
-                success: true, 
-                followed: true,
-                message: 'Successfully verified follow! You are following @neftitxyz'
-            });
-        } else {
-            res.json({ 
-                success: true, 
-                followed: false,
-                message: `Please follow @${NEFTIT_X_USERNAME} first, then click Verify Follow again`,
-                manualVerification: true
-            });
-        }
-        
-    } catch (error) {
-        console.error('❌ Error checking follow status:', error);
-        res.status(500).json({ 
-            error: 'Failed to verify follow status',
-            details: error.response?.data || error.message
-        });
-    }
-});
+// Old Twitter verification endpoint removed - now using simplified flow
 
-// Direct follow verification (when we have Twitter user ID but no OAuth state)
-app.post('/api/direct-verify-follow', async (req, res) => {
-    const { twitterUserId, confirmed } = req.body;
-    
-    if (!twitterUserId) {
-        return res.status(400).json({ error: 'Twitter user ID required' });
-    }
-    
-    if (!confirmed) {
-        return res.status(400).json({ error: 'Confirmation required' });
-    }
-    
-    try {
-        // Update database to mark as followed
-        if (supabase) {
-            const { error: updateError } = await supabase
-                .from('users')
-                .update({
-                    followed_neftit: true,
-                    updated_at: new Date().toISOString()
-                })
-                .eq('twitter_provider_id', twitterUserId);
-                
-            if (updateError) {
-                console.error('❌ Database update error:', updateError);
-                return res.status(500).json({ error: 'Failed to update follow status' });
-            }
-        }
-        
-        res.json({ 
-            success: true, 
-            followed: true,
-            message: 'Follow verified directly!'
-        });
-        
-    } catch (error) {
-        console.error('❌ Error in direct verification:', error);
-        res.status(500).json({ error: 'Failed to verify follow directly' });
-    }
-});
-
-// Manual follow verification (when API fails)
-app.post('/api/manual-verify-follow', async (req, res) => {
-    const { state, confirmed } = req.body;
-    
-    if (!state || !stateStore.has(state)) {
-        return res.status(400).json({ error: 'Invalid state parameter' });
-    }
-    
-    const stateData = stateStore.get(state);
-    if (!stateData.userId) {
-        return res.status(400).json({ error: 'No user ID available' });
-    }
-    
-    if (!confirmed) {
-        return res.status(400).json({ error: 'Confirmation required' });
-    }
-    
-    try {
-        // Update database to mark as followed
-        if (supabase) {
-            const { error: updateError } = await supabase
-                .from('users')
-                .update({
-                    followed_neftit: true,
-                    updated_at: new Date().toISOString()
-                })
-                .eq('twitter_provider_id', stateData.userId);
-                
-            if (updateError) {
-                console.error('❌ Database update error:', updateError);
-                return res.status(500).json({ error: 'Failed to update follow status' });
-            }
-        }
-        
-        // Clean up state
-        stateStore.delete(state);
-        
-        res.json({ 
-            success: true, 
-            followed: true,
-            message: 'Follow verified manually!'
-        });
-        
-    } catch (error) {
-        console.error('❌ Error in manual verification:', error);
-        res.status(500).json({ error: 'Failed to verify follow manually' });
-    }
-});
+// Old Twitter verification endpoints removed - now using simplified flow
 
 // Submit wallet address
 app.post('/api/submit-wallet', async (req, res) => {
@@ -1691,149 +1551,428 @@ app.get('/api/debug/test-discord-bot', async (req, res) => {
     }
 });
 
-// API endpoint to verify Discord server join
-app.post('/api/verify-discord-join', async (req, res) => {
-    console.log('🔍 Verify Discord join request received');
-    console.log('Request body:', req.body);
+// ==================================================
+// 🚀 ROBUST DISCORD VERIFICATION SYSTEM
+// Enhanced with rate limiting, caching, and comprehensive error handling
+// ==================================================
+
+// Health monitoring for Discord verification
+let discordHealthStats = {
+    status: 'healthy',
+    startTime: Date.now(),
+    totalRequests: 0,
+    successfulRequests: 0,
+    failedRequests: 0,
+    rateLimitHits: 0,
+    lastError: null,
+    uptime: () => Math.floor((Date.now() - discordHealthStats.startTime) / 1000)
+};
+
+// Rate limiting storage for Discord verification
+const discordRateLimitStore = new Map();
+const discordCache = new Map();
+
+// Discord verification configuration
+const DISCORD_CONFIG = {
+    RATE_LIMIT: {
+        WINDOW_MS: 60 * 1000, // 1 minute
+        MAX_REQUESTS: 45,     // Stay under Discord's 50/sec limit
+        RETRY_AFTER: 5000     // 5 seconds
+    },
+    TIMEOUT: 15000,         // 15 seconds
+    MAX_RETRIES: 3,
+    CACHE_DURATION: 5 * 60 * 1000 // 5 minutes
+};
+
+// Rate limiting middleware for Discord verification
+function discordRateLimitMiddleware(req, res, next) {
+    const clientId = req.ip || 'unknown';
+    const now = Date.now();
     
-    const { discordUserId } = req.body;
-    
-    if (!discordUserId) {
-        console.log('❌ No Discord user ID provided');
-        return res.status(400).json({ error: 'No Discord user ID provided' });
+    // Clean old entries
+    for (const [key, data] of discordRateLimitStore.entries()) {
+        if (now > data.resetTime) {
+            discordRateLimitStore.delete(key);
+        }
     }
     
-    try {
-        console.log('🔍 Verifying Discord server join for user:', discordUserId);
-        
-        // Check if bot token and guild ID are configured
-        if (!DISCORD_BOT_TOKEN || DISCORD_BOT_TOKEN === 'your_discord_bot_token_here') {
-            console.log('❌ Discord bot token not configured');
-            return res.status(500).json({ 
-                error: 'Bot not configured',
-                message: 'Discord bot token is not configured. Please set DISCORD_BOT_TOKEN in your .env file.',
-                needsSetup: true
-            });
-        }
-        
-        if (!DISCORD_GUILD_ID || DISCORD_GUILD_ID === 'your_discord_guild_id_here') {
-            console.log('❌ Discord guild ID not configured');
-            return res.status(500).json({ 
-                error: 'Guild not configured',
-                message: 'Discord guild ID is not configured. Please set DISCORD_GUILD_ID in your .env file.',
-                needsSetup: true
-            });
-        }
-        
-        // Use Discord Bot API to check if user is in your server
-        console.log('🔍 Checking if user is in Discord server using bot API...');
-        console.log('🔍 Guild ID:', DISCORD_GUILD_ID);
-        console.log('🔍 Bot token configured:', DISCORD_BOT_TOKEN ? 'YES' : 'NO');
-        
-        let isInServer = false;
-        
+    const clientData = discordRateLimitStore.get(clientId) || {
+        count: 0,
+        resetTime: now + DISCORD_CONFIG.RATE_LIMIT.WINDOW_MS
+    };
+    
+    if (now > clientData.resetTime) {
+        clientData.count = 1;
+        clientData.resetTime = now + DISCORD_CONFIG.RATE_LIMIT.WINDOW_MS;
+    } else if (clientData.count >= DISCORD_CONFIG.RATE_LIMIT.MAX_REQUESTS) {
+        discordHealthStats.rateLimitHits++;
+        console.log(`⚠️ Discord rate limit exceeded for ${clientId}`);
+        return res.status(429).json({
+            success: false,
+            message: 'Too many Discord verification requests. Please try again later.',
+            retryAfter: Math.ceil((clientData.resetTime - now) / 1000)
+        });
+    } else {
+        clientData.count++;
+    }
+    
+    discordRateLimitStore.set(clientId, clientData);
+    discordHealthStats.totalRequests++;
+    next();
+}
+
+// Enhanced Discord API call with comprehensive error handling
+async function callDiscordAPI(endpoint, retries = DISCORD_CONFIG.MAX_RETRIES) {
+    for (let attempt = 1; attempt <= retries; attempt++) {
         try {
-            // Get user from Discord server using bot token
-            const memberResponse = await axios.get(`https://discord.com/api/v10/guilds/${DISCORD_GUILD_ID}/members/${discordUserId}`, {
+            console.log(`🔗 Discord API call (attempt ${attempt}/${retries}): ${endpoint}`);
+            
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), DISCORD_CONFIG.TIMEOUT);
+            
+            const response = await fetch(endpoint, {
+                method: 'GET',
                 headers: {
                     'Authorization': `Bot ${DISCORD_BOT_TOKEN}`,
-                    'Content-Type': 'application/json'
-                }
+                    'Content-Type': 'application/json',
+                    'User-Agent': 'NEFTIT-Discord-Bot/1.0'
+                },
+                signal: controller.signal
             });
             
-            if (memberResponse.status === 200) {
-                isInServer = true;
-                console.log('✅ User found in Discord server:', memberResponse.data.user.username);
+            clearTimeout(timeoutId);
+            
+            // Handle rate limiting
+            if (response.status === 429) {
+                const retryAfter = parseInt(response.headers.get('Retry-After') || '5');
+                console.log(`⏳ Rate limited by Discord, waiting ${retryAfter}s...`);
+                
+                if (attempt < retries) {
+                    await new Promise(resolve => setTimeout(resolve, retryAfter * 1000));
+                    continue;
+                } else {
+                    return {
+                        status: 429,
+                        ok: false,
+                        error: 'Rate limited by Discord API',
+                        retryAfter
+                    };
+                }
             }
             
-        } catch (discordError) {
-            console.log('❌ Error checking Discord server membership:', discordError.response?.status, discordError.response?.data);
-            
-            if (discordError.response?.status === 404) {
-                // 404 means user is not in the server
-                isInServer = false;
-                console.log('❌ User not found in Discord server');
-            } else if (discordError.response?.status === 403) {
-                console.log('❌ Bot does not have permission to check server members');
-                return res.status(500).json({ 
-                    error: 'Bot permission error',
-                    message: 'Bot does not have permission to check server members. Please add the bot to your server and give it proper permissions.',
-                    needsSetup: true
-                });
-            } else if (discordError.response?.status === 10004) {
-                console.log('❌ Unknown Guild - Bot not in server or invalid guild ID');
-                return res.status(500).json({ 
-                    error: 'Unknown Guild',
-                    message: 'Bot is not in the Discord server or guild ID is incorrect. Please add the bot to your server.',
-                    needsSetup: true
-                });
-            } else {
-                console.log('❌ Discord API error:', discordError.message);
-                return res.status(500).json({ 
-                    error: 'Discord API error',
-                    message: 'Failed to check Discord server membership. Please try again.',
-                    details: discordError.response?.data
-                });
+            // Handle other errors
+            if (!response.ok && response.status !== 404) {
+                console.log(`❌ Discord API error: ${response.status} ${response.statusText}`);
+                
+                if (attempt < retries) {
+                    await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
+                    continue;
+                }
             }
+            
+            const data = response.ok ? await response.json() : null;
+            
+            return {
+                status: response.status,
+                ok: response.ok,
+                data,
+                headers: Object.fromEntries(response.headers.entries())
+            };
+            
+        } catch (error) {
+            console.error(`💥 Discord API call error (attempt ${attempt}):`, error.message);
+            
+            if (error.name === 'AbortError') {
+                console.log(`⏰ Request timeout after ${DISCORD_CONFIG.TIMEOUT}ms`);
+            }
+            
+            if (attempt === retries) {
+                return {
+                    status: 500,
+                    ok: false,
+                    error: error.message,
+                    type: error.name
+                };
+            }
+            
+            // Exponential backoff
+            const delay = 1000 * Math.pow(2, attempt - 1);
+            await new Promise(resolve => setTimeout(resolve, delay));
         }
+    }
+}
+
+// Cache management for Discord verification
+function getCachedDiscordResult(key) {
+    const cached = discordCache.get(key);
+    if (cached && Date.now() < cached.expires) {
+        console.log(`📋 Using cached Discord result for: ${key}`);
+        return cached.data;
+    }
+    if (cached) {
+        discordCache.delete(key);
+    }
+    return null;
+}
+
+function setCachedDiscordResult(key, data) {
+    discordCache.set(key, {
+        data,
+        expires: Date.now() + DISCORD_CONFIG.CACHE_DURATION
+    });
+    console.log(`💾 Cached Discord result for: ${key}`);
+}
+
+// API endpoint to verify Discord server join (ROBUST VERSION)
+app.post('/api/verify-discord-join', discordRateLimitMiddleware, async (req, res) => {
+    try {
+        const { discordUserId, guildId } = req.body;
         
-        if (isInServer) {
-            console.log('✅ User is verified to be in Discord server');
-            
-            // Update database with join status
-            if (supabase) {
-                try {
-                    const { error: updateError } = await supabase
-                        .from('users')
-                        .update({ 
-                            discord_joined: true,
-                            discord_joined_at: new Date().toISOString()
-                        })
-                        .eq('discord_provider_id', discordUserId);
-                    
-                    if (updateError) {
-                        console.error('❌ Error updating Discord join status:', updateError);
-                    } else {
-                        console.log('✅ Discord join status updated in database');
-                    }
-                } catch (dbError) {
-                    console.error('❌ Database error:', dbError);
-                }
-            }
-            
-            res.json({
-                success: true,
-                joined: true,
-                message: 'Discord server join verified successfully!'
-            });
-            
-        } else {
-            console.log('❌ User is not in Discord server');
-            res.json({
+        if (!discordUserId) {
+            discordHealthStats.failedRequests++;
+            return res.status(400).json({
                 success: false,
-                joined: false,
-                message: 'Please join the Discord server first, then try again.'
+                message: 'Missing required parameter: discordUserId',
+                error: 'MISSING_USER_ID'
             });
         }
+
+        // Use guildId from request or fallback to environment variable
+        const targetGuildId = guildId || DISCORD_GUILD_ID;
         
+        if (!targetGuildId || targetGuildId === 'your_discord_guild_id_here') {
+            discordHealthStats.failedRequests++;
+            discordHealthStats.lastError = 'Discord guild ID not configured';
+            return res.status(500).json({
+                success: false,
+                message: 'Discord guild ID not configured on server',
+                error: 'MISSING_GUILD_ID',
+                needsSetup: true
+            });
+        }
+
+        // Validate Discord user ID format
+        if (!/^\d{17,19}$/.test(discordUserId)) {
+            discordHealthStats.failedRequests++;
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid Discord user ID format',
+                error: 'INVALID_USER_ID'
+            });
+        }
+
+        // Check if bot token is configured
+        if (!DISCORD_BOT_TOKEN || DISCORD_BOT_TOKEN === 'your_discord_bot_token_here') {
+            discordHealthStats.failedRequests++;
+            discordHealthStats.lastError = 'Discord bot token not configured';
+            return res.status(500).json({
+                success: false,
+                message: 'Discord bot token not configured on server',
+                error: 'MISSING_BOT_TOKEN',
+                needsSetup: true
+            });
+        }
+
+        console.log(`🔍 Verifying Discord membership for user: ${discordUserId} in guild: ${targetGuildId}`);
+        console.log(`🔍 Discord Bot Token configured: ${!!DISCORD_BOT_TOKEN}`);
+        console.log(`🔍 Discord Guild ID: ${targetGuildId}`);
+
+        // Check cache first
+        const cacheKey = `member:${discordUserId}:${targetGuildId}`;
+        const cached = getCachedDiscordResult(cacheKey);
+        if (cached) {
+            console.log(`📋 Using cached result for user ${discordUserId}`);
+            discordHealthStats.successfulRequests++;
+            return res.json({
+                ...cached,
+                cached: true,
+                timestamp: new Date().toISOString()
+            });
+        }
+
+        const apiUrl = `https://discord.com/api/v10/guilds/${targetGuildId}/members/${discordUserId}`;
+        console.log(`🔗 Making Discord API call to: ${apiUrl}`);
+        const result = await callDiscordAPI(apiUrl);
+        console.log(`📊 Discord API response status: ${result.status}, ok: ${result.ok}`);
+
+        let response;
+        if (result.status === 404) {
+            console.log(`❌ User ${discordUserId} NOT found in Discord server ${targetGuildId}`);
+            response = {
+                success: false,
+                message: 'User not found in Discord server. Please join the server first.',
+                isMember: false,
+                guildId: targetGuildId,
+                userId: discordUserId
+            };
+            discordHealthStats.failedRequests++;
+        } else if (!result.ok) {
+            response = {
+                success: false,
+                message: 'Failed to verify Discord membership',
+                error: result.error || `Discord API returned status: ${result.status}`,
+                isMember: false,
+                guildId: targetGuildId,
+                userId: discordUserId
+            };
+            discordHealthStats.failedRequests++;
+            discordHealthStats.lastError = result.error;
+        } else {
+            console.log(`✅ User ${discordUserId} FOUND in Discord server ${targetGuildId}`);
+            console.log(`👤 Username: ${result.data.user?.username}`);
+            console.log(`📅 Joined at: ${result.data.joined_at}`);
+            console.log(`🎭 Roles: ${JSON.stringify(result.data.roles || [])}`);
+            console.log(`⏳ Pending status: ${result.data.pending}`);
+            
+            // Check if user is pending verification
+            if (result.data.pending === true) {
+                console.log(`⚠️ User is PENDING verification - not fully joined yet`);
+                response = {
+                    success: false,
+                    message: 'User is pending verification. Please complete the Discord server verification process.',
+                    isMember: false,
+                    guildId: targetGuildId,
+                    userId: discordUserId,
+                    pending: true,
+                    memberData: {
+                        username: result.data.user?.username,
+                        discriminator: result.data.user?.discriminator,
+                        joinedAt: result.data.joined_at,
+                        roles: result.data.roles || []
+                    }
+                };
+                discordHealthStats.failedRequests++;
+            } else {
+                console.log(`✅ User is FULLY VERIFIED - joined successfully`);
+                response = {
+                    success: true,
+                    message: 'Discord membership verified successfully!',
+                    isMember: true,
+                    guildId: targetGuildId,
+                    userId: discordUserId,
+                    memberData: {
+                        username: result.data.user?.username,
+                        discriminator: result.data.user?.discriminator,
+                        joinedAt: result.data.joined_at,
+                        roles: result.data.roles || []
+                    }
+                };
+                discordHealthStats.successfulRequests++;
+                setCachedDiscordResult(cacheKey, response);
+            }
+        }
+
+        // Update database with join status if successful
+        if (response.success && response.isMember && supabase) {
+            try {
+                const { error: updateError } = await supabase
+                    .from('users')
+                    .update({ 
+                        discord_joined: true,
+                        discord_joined_at: new Date().toISOString(),
+                        updated_at: new Date().toISOString()
+                    })
+                    .eq('discord_provider_id', discordUserId);
+                
+                if (updateError) {
+                    console.error('❌ Error updating Discord join status:', updateError);
+                } else {
+                    console.log('✅ Discord join status updated in database');
+                }
+            } catch (dbError) {
+                console.error('❌ Database error:', dbError);
+            }
+        }
+
+        res.json({
+            ...response,
+            timestamp: new Date().toISOString(),
+            cached: false
+        });
+
     } catch (error) {
-        console.error('❌ Error verifying Discord join:', error);
-        res.status(500).json({ 
-            error: 'Failed to verify Discord join',
-            details: error.message 
+        discordHealthStats.failedRequests++;
+        discordHealthStats.lastError = error.message;
+        console.error('❌ Discord membership verification error:', error);
+        
+        res.status(500).json({
+            success: false,
+            message: 'Internal error during Discord membership verification',
+            error: error.message,
+            timestamp: new Date().toISOString()
         });
     }
 });
 
-// Clean up expired states (run every hour)
+// Discord verification health check endpoint
+app.get('/api/discord-health', (req, res) => {
+    const memoryUsage = process.memoryUsage();
+    
+    res.json({
+        success: true,
+        message: 'Discord verification service is running',
+        timestamp: new Date().toISOString(),
+        uptime: `${Math.floor(discordHealthStats.uptime() / 3600)}h ${Math.floor((discordHealthStats.uptime() % 3600) / 60)}m ${discordHealthStats.uptime() % 60}s`,
+        memory: {
+            rss: `${Math.round(memoryUsage.rss / 1024 / 1024)}MB`,
+            heapUsed: `${Math.round(memoryUsage.heapUsed / 1024 / 1024)}MB`,
+            heapTotal: `${Math.round(memoryUsage.heapTotal / 1024 / 1024)}MB`
+        },
+        stats: discordHealthStats,
+        config: {
+            botTokenConfigured: !!DISCORD_BOT_TOKEN,
+            guildIdConfigured: !!DISCORD_GUILD_ID,
+            rateLimit: DISCORD_CONFIG.RATE_LIMIT,
+            cacheSize: discordCache.size,
+            rateLimitStoreSize: discordRateLimitStore.size
+        }
+    });
+});
+
+// Clear Discord verification cache endpoint
+app.post('/api/discord-clear-cache', (req, res) => {
+    const oldSize = discordCache.size;
+    discordCache.clear();
+    discordRateLimitStore.clear();
+    
+    res.json({
+        success: true,
+        message: 'Discord verification cache cleared successfully',
+        clearedEntries: oldSize,
+        timestamp: new Date().toISOString()
+    });
+});
+
+// Clean up expired states and Discord cache (run every minute)
 setInterval(() => {
     const now = Date.now();
+    
+    // Clean up OAuth states
     for (const [state, data] of stateStore.entries()) {
         if (now - data.timestamp > 3600000) { // 1 hour
             stateStore.delete(state);
         }
     }
-}, 3600000);
+    
+    // Clean up Discord cache
+    for (const [key, data] of discordCache.entries()) {
+        if (now >= data.expires) {
+            discordCache.delete(key);
+        }
+    }
+    
+    // Clean up Discord rate limit store
+    for (const [key, data] of discordRateLimitStore.entries()) {
+        if (now > data.resetTime) {
+            discordRateLimitStore.delete(key);
+        }
+    }
+    
+    // Reset Discord health status if no recent errors
+    if (discordHealthStats.status === 'degraded' && now - discordHealthStats.startTime > 300000) { // 5 minutes
+        discordHealthStats.status = 'healthy';
+    }
+}, 60000); // Run every minute
 
 // Serve static files (frontend) - must be after auth routes
 app.use(express.static('.'));
