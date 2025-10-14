@@ -474,7 +474,7 @@ function updateTaskUI(taskType) {
         const submitButton = taskItem.querySelector('.submit-button');
         if (submitButton) {
             submitButton.innerHTML = '<span class="button-text">Completed</span><i class="fas fa-check"></i>';
-            submitButton.style.background = '#28a745';
+            submitButton.style.background = 'linear-gradient(to right, #5d43ef, #8a79ec)';
             submitButton.disabled = true;
         }
         
@@ -488,7 +488,7 @@ function updateTaskUI(taskType) {
         const button = taskItem.querySelector('.task-button');
         if (button) {
             button.innerHTML = '<span class="button-text">Completed</span><i class="fas fa-check"></i>';
-            button.style.background = '#28a745';
+            button.style.background = 'linear-gradient(to right, #5d43ef, #8a79ec)';
             button.disabled = true;
         }
     }

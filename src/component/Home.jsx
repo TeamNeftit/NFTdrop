@@ -13,55 +13,49 @@ function Home() {
   return (
     <main>
 
-      <div className="statusContainer">
-        <h1 className="status">WAITLIST IS CLOSED NOW!</h1>
-      </div>
+        <div class="strip strip1"></div>
+        <div class="strip strip2"></div>
 
-      <div className="tasks">
-        <h3>Complete simple tasks to be eligible for first NFTDROP</h3>
-
-        {/* Follow X Task */}
-        <div className="task" id="task-follow">
+        <div className="tasks">
+        <h2>COMPLETE TASKS TO BE ELIGIBLE FOR FIRST NFT DROP</h2>
+        
+          <div className="taskContainer">
+          <div className="task" id="task-discord">
           <div className="task-info">
-            <h4><span className='taskFollow'>{'->'}</span> Follow neftit on X</h4>
-            <div className="task-buttons">
-              <button className="task-button btn1" onClick={call('authenticateX')}>Connect X</button>
-              <button className="task-button btn1" id="twitter-follow-btn" onClick={call('followTwitter')} style={{display: 'none'}}>Follow X</button>
-              <button className="task-button btn1" id="twitter-verify-btn" onClick={call('verifyTwitterFollow')} style={{display: 'none'}}>Verify Follow</button>
-            </div>
+            <p>Join Our Discord Community</p>
+            <button className="task-button btn2" id="discord-connect-btn" onClick={call('authenticateDiscord')}>CONNECT DISCORD</button>
+            <button className="task-button btn2" id="discord-join-btn" onClick={call('joinDiscordServer')} style={{ display: 'none', marginTop: 10 }}>JOIN DISCORD SERVER</button>
+            <button className="task-button btn2" id="discord-verify-btn" onClick={call('verifyDiscordJoin')} style={{ display: 'none', marginTop: 10 }}>VERIFY JOIN</button>
           </div>
         </div>
 
-        {/* Join Discord Task */}
-        <div className="task" id="task-discord">
+        <div className="task" id="task-follow">
           <div className="task-info">
-            <h4><span className='taskDiscord'>{'->'}</span> Join neftit Discord</h4>
-            <div className="task-buttons">
-              <button className="task-button btn2" id="discord-connect-btn" onClick={call('authenticateDiscord')}>Connect Discord</button>
-              <button className="task-button btn2" id="discord-join-btn" onClick={call('joinDiscordServer')} style={{ display: 'none' }}>Join Discord Server</button>
-              <button className="task-button btn2" id="discord-verify-btn" onClick={call('verifyDiscordJoin')} style={{ display: 'none' }}>Verify Join</button>
-            </div>
+            <p>Follow Us on X</p>
+            <button className="task-button btn1" onClick={call('authenticateX')}>CONNECT X</button>
+            <button className="task-button btn1" id="twitter-follow-btn" onClick={call('followTwitter')} style={{display: 'none', marginTop: 10}}>FOLLOW X</button>
+            <button className="task-button btn1" id="twitter-verify-btn" onClick={call('verifyTwitterFollow')} style={{display: 'none', marginTop: 10}}>VERIFY FOLLOW</button>
           </div>
         </div>
 
         {/* EVM Address Task */}
         <div className="task" id="task-address">
           <div className="task-info">
-            <h4><span className='taskAddress'>{'->'}</span> Enter your EVM address</h4>
-            <div className="address-input">
-              <input type="text" placeholder="0x..." id="evmAddress" />
-              <button className="submit-button" onClick={call('submitAddress')}>Submit</button>
-            </div>
+              <input  className="address-input" type="text" placeholder="Enter your EVM address" id="evmAddress" />
+              <button className="submit-button" onClick={call('submitAddress')}>SUBMIT</button>
           </div>
         </div>
-
+        </div>
       </div>
 
       {/* Rules */}
       <div className="rules">
         <h3>Rewards</h3>
-        <p className="rule1"><span className='taskRule1'>{'->'}</span> 3 rarities in drop</p>
-        <p className="rule2"><span className='taskRule2'>{'->'}</span> Discord role holders have most chances to get high tier NFT</p>
+        <ul>
+        <li className="rule2">Discord role holders have most chances to get high tier NFT</li>
+        <li className="rule1">3 rarities in drop</li>
+        </ul>
+        
       </div>
 
       {/* Wallet Connection Modal */}

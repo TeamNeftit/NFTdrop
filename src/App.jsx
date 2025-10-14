@@ -1,4 +1,3 @@
-import Header from './component/Header'
 import Home from './component/Home'
 import Footer from './component/Footer'
 import { Routes, Route, useLocation } from 'react-router-dom'
@@ -11,7 +10,6 @@ function AppContent() {
 
   return (
     <div className="container">
-      {!isDocsPage && <Header />}
 
       <Routes>
         <Route path="/" element={<Home />} />
