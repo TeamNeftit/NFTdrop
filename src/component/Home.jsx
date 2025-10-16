@@ -1,4 +1,5 @@
 import './Home.css'
+import { useState, useEffect } from 'react';
 
 function Home() {
   // Helper to call legacy globals safely
@@ -10,8 +11,29 @@ function Home() {
     }
   };
 
+  const [rulesPopup, setRulesPopup] = useState(false);
+
+    useEffect(() => {
+  if (rulesPopup) {
+    document.body.style.overflow = "hidden";
+    document.documentElement.style.overflow = "hidden"; // lock html as well
+  } else {
+    document.body.style.overflow = "auto";
+    document.documentElement.style.overflow = "auto";
+  }
+
+  return () => {
+    document.body.style.overflow = "auto";
+    document.documentElement.style.overflow = "auto";
+  };
+}, [rulesPopup]);
+
   return (
     <main>
+
+    <div className="logoContainer">
+      <img src="./images/logo.png" alt="LOGO" />
+    </div>
 
         <div class="strip strip1"></div>
         <div class="strip strip2"></div>
@@ -49,14 +71,22 @@ function Home() {
       </div>
 
       {/* Rules */}
+      {rulesPopup && (
+      <div className="rulesPopUp">
       <div className="rules">
+        <button className="close-x-button" onClick={() => setRulesPopup(false)}>&times;</button>
         <h3>Rewards</h3>
         <ul>
         <li className="rule2">Discord role holders have most chances to get high tier NFT</li>
         <li className="rule1">3 rarities in drop</li>
         </ul>
-        
+        <button className="closeButton" onClick={() => setRulesPopup(false)}>Close</button>
+        </div>
       </div>
+      )}
+
+      {/* Rules Button */}
+      <button className="rules-button" onClick={() => setRulesPopup(true)}>Rewards</button>
 
       {/* Wallet Connection Modal */}
       <div className="modal" id="walletModal">

@@ -29,6 +29,31 @@
     text-align: center;
 }
 
+.logoContainer{
+    position: absolute;
+    display: flex;
+    margin-bottom: 20px;
+    align-items: center;
+    height: 60px;
+    width: 200px;
+    top: 20px;
+    left: 20px;
+    
+}
+
+.logoContainer img{
+    height: 50%;
+    width: 100%;
+    object-fit: contain;
+    transition: all 0.3s ease;
+}
+
+.logoContainer img:hover{
+    cursor: pointer;
+    transform: scale(1.1);
+}
+
+
 /* Strip elements */
 /* .strip {
     position: fixed;
@@ -179,24 +204,103 @@
 }
 
 /* Rules */
-.rules {
-    max-width: 1200px;
-    margin-bottom: 50px;
-    padding: 0 16px;
-    margin-right: 390px;
+.rulesPopUp{
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.4); 
+  backdrop-filter: blur(10px);           
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
+
+.rules {
+    background: #121021;
+    color: white;
+    padding: 2rem;
+    border-radius: 16px;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.2);
+    position: relative;
+    display: flex;
+    flex-direction: column;
+}
+
+.rules:hover h3{
+    color: #5d43ef;
+}
+
+.close-x-button {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: none;
+    border: none;
+    color: #666;
+    font-size: 1.5rem;
+    cursor: pointer;
+}
+
+.close-x-button:hover {
+    color: #fff;
+}
+
 .rules h3 {
     font-size: 1.3rem;
     font-weight: 600;
     color: #fff;
     margin-bottom: 20px;
-    color: #5d43ef;
 }
 
 .rules li {
     font-size: 0.9rem;
     color: #ccc;
     margin-bottom: 10px;
+}
+
+.rules-button {
+    background: linear-gradient(to right, #5d43ef, #8a79ec);
+    color: #fff;
+    border: 1px solid #8a79ec;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 1rem;
+    font-weight: 400;
+    transition: all 0.3s ease;
+    min-width: 150px;
+    text-align: center;
+    white-space: nowrap;
+    border-radius: 50px;
+}
+
+.rules-button:hover {
+    border-color: #5d43ef;
+    background: linear-gradient(to right, #8a79ec, #5d43ef);
+    box-shadow: 0 0 25px #5d43ef;
+}
+
+.closeButton {
+    background: linear-gradient(to right, #5d43ef, #8a79ec);
+    color: #fff;
+    border: 1px solid #8a79ec;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 1rem;
+    font-weight: 400;
+    transition: all 0.3s ease;
+    width: 100px;
+    text-align: center;
+    white-space: nowrap;
+    border-radius: 50px;
+    margin-top: 20px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.closeButton:hover {
+    border-color: #5d43ef;
+    background: linear-gradient(to right, #8a79ec, #5d43ef);
 }
 
 /* Modal */
@@ -321,13 +425,20 @@ main {
   top: 87%;
   right: -10%;
   transform: rotate(-10deg);
-  background: url("/images/waitlistClosedWhite.gif");
+  background: url("/images/claimNftWhite.gif");
 }
 
 @media (max-width: 426px) {
     main {
         height: 120vh;
         background-image: none;
+    }
+
+    .logoContainer{
+        top: 10px;
+        left: 10px;
+        height: 30px;
+        width: 80px;
     }
    
     .taskContainer {
@@ -370,7 +481,7 @@ main {
     .strip1 {
         background-size: cover;
         transform: rotate(-20deg);
-        top: 0%;
+        top: 2.5%;
          left: -5%;
 
     }
@@ -381,10 +492,17 @@ main {
         top: 94%;
         right: -5%;
     }
+    .rules-button{
+        font-size: 0.7rem;
+        min-width: 110px;
+    }
 
-    .rules {
-        margin-right: 0;
-        margin-left: 10px;
+     .rules{
+        width: 300px;
+    }
+
+    .closeButton{
+        font-size: 0.7rem;
     }
 
     .rules h3 {
@@ -399,6 +517,13 @@ main {
 @media (min-width: 427px) and (max-width: 769px) {
     main {
         height: 110vh;
+    }
+
+    .logoContainer{
+        top: 15px;
+        left: 15px;
+        height: 40px;
+        width: 120px;
     }
    
     .taskContainer {
@@ -455,8 +580,8 @@ main {
         right: -5%;
     }
 
-    .rules {
-        margin-right: 230px;
+    .closeButton{
+        font-size: 0.8rem;
     }
 
     .rules h3 {
