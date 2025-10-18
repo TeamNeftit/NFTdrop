@@ -1,5 +1,6 @@
 import './Home.css'
 import { useState, useEffect } from 'react';
+import { Info } from 'lucide-react';
 
 function Home() {
   // Helper to call legacy globals safely
@@ -38,6 +39,9 @@ function Home() {
         <div class="strip strip1"></div>
         <div class="strip strip2"></div>
 
+      {/* Rules Button */}
+      <button className="rules-button" onClick={() => setRulesPopup(true)}><span><Info className="rules-button-icon"/></span>Rewards</button>
+
         <div className="tasks">
         <h2>COMPLETE TASKS TO BE ELIGIBLE FOR FIRST NFT DROP</h2>
         
@@ -70,6 +74,11 @@ function Home() {
         </div>
       </div>
 
+      <div className="refer">
+        <h2>REFER A FRIEND</h2>
+        <p>Share the link with your friends and get rewards</p>
+      </div>
+
       {/* Rules */}
       {rulesPopup && (
       <div className="rulesPopUp">
@@ -84,9 +93,6 @@ function Home() {
         </div>
       </div>
       )}
-
-      {/* Rules Button */}
-      <button className="rules-button" onClick={() => setRulesPopup(true)}>Rewards</button>
 
       {/* Wallet Connection Modal */}
       <div className="modal" id="walletModal">

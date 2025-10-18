@@ -95,7 +95,7 @@
     color: #5d43ef;
     padding: 5px 0px;
     max-width: 1030px;
-    margin-top: 100px;
+    margin-top: 30px;
     margin-bottom: 1.5rem;
     text-align: center;
     border-top: 1px solid;
@@ -157,12 +157,13 @@
 /* Address Input */
 
 .address-input{
-    background: rgba(61, 61, 83, 0.412);
-    border-radius: 50px;
-    border: none;                
+    background-color: transparent;
+    border: none;
+    border-bottom: 2px solid;
+    border-image: linear-gradient(to right, #5d43ef, #8a79ec) 1;              
     outline: none;     
     color: #fff;
-    padding: 12px 24px;
+    padding: 8px 0px;
     font-size: 1.1rem;
     width: 500px; /* Fixed width */
 }
@@ -172,7 +173,7 @@
 }
 
 .address-input::placeholder {
-    color: #666;
+    color: #fff;
 }
 
 .submit-button {
@@ -201,6 +202,31 @@
     color: #666;
     border-color: #333;
     cursor: not-allowed;
+}
+
+/* Refer */
+.refer{
+    margin: 0px auto 40px;
+    width: 800px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    align-items: left;
+    gap: 10px;
+    background-color: #1b1930;
+    border-radius: 16px;
+    border: 2px solid #121021;
+}
+
+.refer h2{
+    font-size: 1.25rem;
+    color: #5d43ef;
+}
+
+.refer p{
+    font-size: 0.9rem;
+    color: white;
+    margin: 0;
 }
 
 /* Rules */
@@ -271,6 +297,17 @@
     text-align: center;
     white-space: nowrap;
     border-radius: 50px;
+    margin-left: 650px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+}
+
+.rules-button span{
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .rules-button:hover {
@@ -278,6 +315,8 @@
     background: linear-gradient(to right, #8a79ec, #5d43ef);
     box-shadow: 0 0 25px #5d43ef;
 }
+
+
 
 .closeButton {
     background: linear-gradient(to right, #5d43ef, #8a79ec);
@@ -393,7 +432,7 @@
 main {
     position: relative;
     z-index: 1;
-    height: 100vh;
+    height: 110vh;
     display: flex;
     flex-direction: column;
     justify-content: center;
@@ -461,12 +500,13 @@ main {
 
     .tasks h2 {
         font-size: 1rem;
-        margin-top: 0px;
+        margin-top: 20px;
     }
 
     .address-input{
         font-size: 0.8rem;
         width: 300px;
+        text-align: center;
     }
 
     .submit-button{
@@ -492,9 +532,21 @@ main {
         top: 94%;
         right: -5%;
     }
+
+    .refer {
+        width: 90%;
+    }
+
     .rules-button{
         font-size: 0.7rem;
         min-width: 110px;
+        margin-left: 0px;
+        gap: 5px;
+    }
+
+    .rules-button span{
+        height: 16px;
+        width: 16px;
     }
 
      .rules{
@@ -516,7 +568,7 @@ main {
 
 @media (min-width: 427px) and (max-width: 769px) {
     main {
-        height: 110vh;
+        height: 120vh;
     }
 
     .logoContainer{
@@ -548,7 +600,7 @@ main {
 
     .tasks h2 {
         font-size: 1.3rem;
-        margin-top: 80px;
+        margin-top: 40px;
     }
 
     .address-input{
@@ -569,7 +621,7 @@ main {
         background-size: cover;
         transform: rotate(-20deg);
         top: 0%;
-         left: -5%;
+        left: -5%;
 
     }
 
@@ -578,6 +630,24 @@ main {
         transform: rotate(-20deg);
         top: 92%;
         right: -5%;
+    }
+
+    .refer {
+        width: 600px;
+    }
+
+    .rules-button{
+        margin-left: 430px;
+        gap: 10px;
+    }
+
+    .rules-button span{
+        height: 22px;
+        width: 22px;
+    }
+
+    .rules{
+        width: 300px;
     }
 
     .closeButton{
