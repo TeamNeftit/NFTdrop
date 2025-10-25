@@ -582,87 +582,29 @@ app.get('/auth/x/callback', async (req, res) => {
                         `);
                     }
                 } else {
-                    // New connection - check if there's an existing user without Twitter
-                    console.log('🔍 No Twitter account found, checking for existing user without Twitter...');
+                    // Twitter account not found - this is a NEW connection
+                    // Frontend will link it to Discord session via /api/link-twitter-to-session
+                    console.log('✅ New Twitter connection - will be linked to Discord session by frontend');
                     
-                    // Look for existing user without Twitter connection
-                    const { data: existingUserWithoutTwitter, error: queryError2 } = await supabase
-                        .from('users')
-                        .select('id, twitter_provider_id, discord_provider_id, wallet_address')
-                        .is('twitter_provider_id', null)
-                        .order('created_at', { ascending: true })
-                        .limit(1)
-                        .single();
-                    
-                    if (existingUserWithoutTwitter && !existingUserWithoutTwitter.wallet_address) {
-                        // Found existing user without Twitter - update it
-                        console.log('🔄 Found existing user without Twitter - updating with Twitter data');
-                        
-                        const { error: updateError } = await supabase
-                            .from('users')
-                            .update({
-                                twitter_provider_id: userId,
-                                twitter_username: userData.username,
-                                twitter_email: userData.email || null,
-                                twitter_connected_at: new Date().toISOString(),
-                                twitter_social_address: socialAddress,
-                                updated_at: new Date().toISOString()
-                            })
-                            .eq('id', existingUserWithoutTwitter.id);
-                        
-                        if (updateError) {
-                            throw updateError;
-                        }
-                        
-                        console.log('✅ Twitter data added to existing user');
-                        
-                        // Send success with existing user ID
-                        return res.send(`
-                            <html>
-                                <body>
-                                    <script>
-                                        window.opener.postMessage({
-                                            type: 'X_AUTH_SUCCESS',
-                                            userId: '${userId}',
-                                            state: '${state}',
-                                            restored: true
-                                        }, '${BASE_URL}');
-                                        window.close();
-                                    </script>
-                                    <p>Twitter connected to existing account! You can close this window.</p>
-                                </body>
-                            </html>
-                        `);
-                    } else {
-                        // No existing user found - create new user
-                        console.log('🔵 Creating new user with Twitter data');
-                        console.log('🔵 User data to insert:', {
-                            twitter_provider_id: userId,
-                            twitter_username: userData.username,
-                            twitter_email: userData.email || null,
-                            twitter_connected_at: new Date().toISOString(),
-                            twitter_social_address: socialAddress
-                        });
-                        
-                        const { data: newUser, error: createError } = await supabase
-                            .from('users')
-                            .insert({
-                                twitter_provider_id: userId,
-                                twitter_username: userData.username,
-                                twitter_email: userData.email || null,
-                                twitter_connected_at: new Date().toISOString(),
-                                twitter_social_address: socialAddress
-                            })
-                            .select('id')
-                            .single();
-                        
-                        if (createError) {
-                            console.error('🔵 Create user error:', createError);
-                            throw createError;
-                        }
-                        
-                        console.log('🔵 New user created with ID:', newUser.id);
-                    }
+                    return res.send(`
+                        <html>
+                            <body>
+                                <script>
+                                    console.log('Sending X_AUTH_SUCCESS for new Twitter account');
+                                    window.opener.postMessage({
+                                        type: 'X_AUTH_SUCCESS',
+                                        userId: '${userId}',
+                                        username: '${userData.username}',
+                                        email: '${userData.email || ''}',
+                                        state: '${state}',
+                                        restored: false
+                                    }, '${BASE_URL}');
+                                    setTimeout(() => window.close(), 2000);
+                                </script>
+                                <p>X connected! You can close this window.</p>
+                            </body>
+                        </html>
+                    `);
                 }
             } catch (dbError) {
                 console.error('❌ Database error:', dbError);
@@ -856,137 +798,95 @@ app.get('/auth/discord/callback', async (req, res) => {
                         hasTwitter: !!existingUser.twitter_provider_id
                     });
                     
-                    // Check if wallet is submitted
-                    if (existingUser.wallet_address) {
-                        // Account is locked - wallet submitted
-                        console.log('❌ Account locked - wallet already submitted');
-                        return res.send(`
-                            <html>
-                                <body style="font-family: Arial; background: #000; color: #fff; padding: 20px;">
-                                    <h2>Account Already Connected</h2>
-                                    <p>This Discord account has already submitted a wallet address and cannot be used again.</p>
-                                    <script>
-                                        window.opener.postMessage({
-                                            type: 'DISCORD_AUTH_ERROR',
-                                            error: 'Account already connected with wallet'
-                                        }, '${BASE_URL}');
-                                        window.close();
-                                    </script>
-                                </body>
-                            </html>
-                        `);
-                    } else {
-                        // Account exists but no wallet - restore session
-                        console.log('✅ Restoring Discord session - no wallet submitted yet');
-                        
-                        // Update the existing user with fresh data
-                        const { error: updateError } = await supabase
-                            .from('users')
-                            .update({
-                                discord_username: userData.username,
-                                discord_email: userData.email || null,
-                                discord_connected_at: new Date().toISOString(),
-                                discord_social_address: socialAddress,
-                                updated_at: new Date().toISOString()
-                            })
-                            .eq('id', existingUser.id);
-                        
-                        if (updateError) {
-                            throw updateError;
-                        }
-                        
-                        console.log('✅ Discord data updated for existing user');
-                        
-                        // Send success with existing user ID
-                        return res.send(`
-                            <html>
-                                <body>
-                                    <script>
-                                        window.opener.postMessage({
-                                            type: 'DISCORD_AUTH_SUCCESS',
-                                            userId: '${userId}',
-                                            restored: true
-                                        }, '${BASE_URL}');
-                                        window.close();
-                                    </script>
-                                    <p>Session restored! You can close this window.</p>
-                                </body>
-                            </html>
-                        `);
-                    }
-                } else {
-                    // New connection - check if there's an existing user without Discord
-                    console.log('🔍 No Discord account found, checking for existing user without Discord...');
+                    // Always restore session for existing Discord accounts
+                    console.log('✅ Restoring Discord session');
+                    console.log('📊 Session status:', {
+                        hasDiscord: !!existingUser.discord_provider_id,
+                        hasTwitter: !!existingUser.twitter_provider_id,
+                        hasWallet: !!existingUser.wallet_address,
+                        discordJoined: !!existingUser.discord_joined
+                    });
                     
-                    // Look for existing user without Discord connection
-                    const { data: existingUserWithoutDiscord, error: queryError2 } = await supabase
+                    // Update the existing user with fresh data
+                    const { error: updateError } = await supabase
                         .from('users')
-                        .select('id, twitter_provider_id, discord_provider_id, wallet_address')
-                        .is('discord_provider_id', null)
-                        .order('created_at', { ascending: true })
-                        .limit(1)
+                        .update({
+                            discord_username: userData.username,
+                            discord_email: userData.email || null,
+                            discord_connected_at: new Date().toISOString(),
+                            discord_social_address: socialAddress,
+                            updated_at: new Date().toISOString()
+                        })
+                        .eq('id', existingUser.id);
+                    
+                    if (updateError) {
+                        throw updateError;
+                    }
+                    
+                    console.log('✅ Discord data updated for existing user');
+                    
+                    // Send success with existing user ID - frontend will restore full session
+                    return res.send(`
+                        <html>
+                            <body>
+                                <script>
+                                    console.log('Sending Discord restored session message...');
+                                    window.opener.postMessage({
+                                        type: 'DISCORD_AUTH_SUCCESS',
+                                        userId: '${userId}',
+                                        restored: true
+                                    }, '${BASE_URL}');
+                                    console.log('Message sent, closing in 2 seconds...');
+                                    setTimeout(() => window.close(), 2000);
+                                </script>
+                                <p>Session restored! You can close this window.</p>
+                            </body>
+                        </html>
+                    `);
+                } else {
+                    // New Discord connection - ALWAYS create new user (Discord is FIRST task)
+                    console.log('✅ Creating new user with Discord data (Discord is first task)');
+                    
+                    const { data: newUser, error: createError } = await supabase
+                        .from('users')
+                        .insert({
+                            discord_provider_id: userId,
+                            discord_username: userData.username,
+                            discord_email: userData.email || null,
+                            discord_connected_at: new Date().toISOString(),
+                            discord_social_address: socialAddress
+                        })
+                        .select('id')
                         .single();
                     
-                    if (existingUserWithoutDiscord && !existingUserWithoutDiscord.wallet_address) {
-                        // Found existing user without Discord - update it
-                        console.log('🔄 Found existing user without Discord - updating with Discord data');
-                        
-                        const { error: updateError } = await supabase
-                            .from('users')
-                            .update({
-                                discord_provider_id: userId,
-                                discord_username: userData.username,
-                                discord_email: userData.email || null,
-                                discord_connected_at: new Date().toISOString(),
-                                discord_social_address: socialAddress,
-                                updated_at: new Date().toISOString()
-                            })
-                            .eq('id', existingUserWithoutDiscord.id);
-                        
-                        if (updateError) {
-                            throw updateError;
-                        }
-                        
-                        console.log('✅ Discord data added to existing user');
-                        
-                        // Send success with existing user ID
-                        return res.send(`
-                            <html>
-                                <body>
-                                    <script>
-                                        window.opener.postMessage({
-                                            type: 'DISCORD_AUTH_SUCCESS',
-                                            userId: '${userId}',
-                                            restored: true
-                                        }, '${BASE_URL}');
-                                        window.close();
-                                    </script>
-                                    <p>Discord connected to existing account! You can close this window.</p>
-                                </body>
-                            </html>
-                        `);
-                    } else {
-                        // No existing user found - create new user
-                        console.log('✅ Creating new user with Discord data');
-                        
-                        const { data: newUser, error: createError } = await supabase
-                            .from('users')
-                            .insert({
-                                discord_provider_id: userId,
-                                discord_username: userData.username,
-                                discord_email: userData.email || null,
-                                discord_connected_at: new Date().toISOString(),
-                                discord_social_address: socialAddress
-                            })
-                            .select('id')
-                            .single();
-                        
-                        if (createError) {
-                            throw createError;
-                        }
-                        
-                        console.log('✅ New user created with ID:', newUser.id);
+                    if (createError) {
+                        throw createError;
                     }
+                    
+                    console.log('✅ New user created with ID:', newUser.id);
+                    console.log('📊 Discord Provider ID:', userId);
+                    
+                    // Wait a moment to ensure database commit
+                    await new Promise(resolve => setTimeout(resolve, 100));
+                    
+                    // Send success message for NEW user
+                    return res.send(`
+                        <html>
+                            <body>
+                                <script>
+                                    console.log('Sending Discord auth success message...');
+                                    window.opener.postMessage({
+                                        type: 'DISCORD_AUTH_SUCCESS',
+                                        userId: '${userId}',
+                                        restored: false
+                                    }, '${BASE_URL}');
+                                    console.log('Message sent, closing in 2 seconds...');
+                                    setTimeout(() => window.close(), 2000);
+                                </script>
+                                <p>Discord connected! You can close this window.</p>
+                            </body>
+                        </html>
+                    `);
                 }
             } catch (dbError) {
                 console.error('❌ Database error:', dbError);
@@ -1010,26 +910,26 @@ app.get('/auth/discord/callback', async (req, res) => {
             }
         } else {
             console.log('⚠️ Supabase not available - user data not saved to database');
+            
+            // Send success message even without database
+            return res.send(`
+                <html>
+                    <body>
+                        <script>
+                            console.log('Sending Discord auth success (no DB)...');
+                            window.opener.postMessage({
+                                type: 'DISCORD_AUTH_SUCCESS',
+                                userId: '${userId}',
+                                restored: false
+                            }, '${BASE_URL}');
+                            console.log('Message sent, closing in 2 seconds...');
+                            setTimeout(() => window.close(), 2000);
+                        </script>
+                        <p>Authentication successful! You can close this window.</p>
+                    </body>
+                </html>
+            `);
         }
-        
-        // Clean up state
-        stateStore.delete(state);
-        
-        // Send success message to parent window
-        res.send(`
-            <html>
-                <body>
-                    <script>
-                        window.opener.postMessage({
-                            type: 'DISCORD_AUTH_SUCCESS',
-                            userId: '${userId}'
-                        }, '${BASE_URL}');
-                        window.close();
-                    </script>
-                    <p>Authentication successful! You can close this window.</p>
-                </body>
-            </html>
-        `);
         
     } catch (error) {
         console.error('Discord OAuth error:', error.response?.data || error.message);
@@ -1058,6 +958,44 @@ app.get('/api/config', (req, res) => {
         discordGuildId: DISCORD_GUILD_ID,
         baseUrl: BASE_URL
     });
+});
+
+// Get total participant count
+app.get('/api/participant-count', async (req, res) => {
+    console.log('📊 Participant count requested');
+    
+    if (!supabase) {
+        console.log('❌ Database not available');
+        return res.status(503).json({ error: 'Database not available', count: 0 });
+    }
+    
+    try {
+        // Count all users who have connected Discord (started the process)
+        const { count, error } = await supabase
+            .from('users')
+            .select('*', { count: 'exact', head: true })
+            .not('discord_provider_id', 'is', null);
+        
+        if (error) {
+            console.error('❌ Database error:', error);
+            throw error;
+        }
+        
+        console.log('✅ Participant count:', count);
+        
+        res.json({
+            success: true,
+            count: count || 0
+        });
+        
+    } catch (error) {
+        console.error('❌ Error getting participant count:', error);
+        res.status(500).json({ 
+            success: false,
+            error: 'Failed to get participant count',
+            count: 0
+        });
+    }
 });
 
 app.get('/api/users', async (req, res) => {
@@ -1217,7 +1155,313 @@ app.get('/api/stats', async (req, res) => {
 
 // Old Twitter verification endpoints removed - now using simplified flow
 
-// Submit wallet address
+// NEW: Link Twitter to existing Discord session
+app.post('/api/link-twitter-to-session', async (req, res) => {
+    if (!supabase) {
+        return res.status(503).json({ error: 'Database not available' });
+    }
+    
+    const { discordUserId, twitterUserId, twitterUsername, twitterEmail } = req.body;
+    
+    if (!discordUserId || !twitterUserId) {
+        return res.status(400).json({ error: 'Discord and Twitter user IDs are required' });
+    }
+    
+    try {
+        // 1. Check if Twitter account is already used in ANY account
+        const { data: existingTwitter } = await supabase
+            .from('users')
+            .select('id, discord_provider_id')
+            .eq('twitter_provider_id', twitterUserId)
+            .single();
+        
+        if (existingTwitter) {
+            return res.status(400).json({ 
+                error: 'This X/Twitter account is already connected to another account',
+                message: 'Please use a different X/Twitter account'
+            });
+        }
+        
+        // 2. Find user by Discord ID
+        const { data: user, error: findError } = await supabase
+            .from('users')
+            .select('*')
+            .eq('discord_provider_id', discordUserId)
+            .single();
+        
+        if (findError || !user) {
+            return res.status(404).json({ 
+                error: 'Discord session not found',
+                message: 'Please connect Discord first'
+            });
+        }
+        
+        // 3. Check if user already has wallet (account locked)
+        if (user.wallet_address) {
+            return res.status(400).json({ 
+                error: 'Account is locked',
+                message: 'Wallet already submitted, cannot modify connections'
+            });
+        }
+        
+        // 4. Add Twitter to the same UUID
+        const { error: updateError } = await supabase
+            .from('users')
+            .update({
+                twitter_provider_id: twitterUserId,
+                twitter_username: twitterUsername,
+                twitter_email: twitterEmail,
+                twitter_connected_at: new Date().toISOString(),
+                twitter_social_address: `social:twitter:${twitterUserId}`,
+                updated_at: new Date().toISOString()
+            })
+            .eq('id', user.id);
+        
+        if (updateError) throw updateError;
+        
+        console.log(`✅ Twitter linked to Discord session: ${user.id}`);
+        
+        res.json({ 
+            success: true, 
+            message: 'X/Twitter connected successfully',
+            userId: user.id
+        });
+        
+    } catch (error) {
+        console.error('Error linking Twitter to session:', error);
+        res.status(500).json({ error: 'Failed to link Twitter account' });
+    }
+});
+
+// NEW: Verify Twitter Follow
+app.post('/api/verify-twitter-follow', async (req, res) => {
+    if (!supabase) {
+        return res.status(503).json({ error: 'Database not available' });
+    }
+    
+    const { discordUserId } = req.body;
+    
+    if (!discordUserId) {
+        return res.status(400).json({ error: 'Discord user ID is required' });
+    }
+    
+    try {
+        // Find user by Discord ID
+        const { data: user, error: findError } = await supabase
+            .from('users')
+            .select('*')
+            .eq('discord_provider_id', discordUserId)
+            .single();
+        
+        if (findError || !user) {
+            return res.status(404).json({ 
+                error: 'User not found',
+                message: 'Please connect Discord first'
+            });
+        }
+        
+        // Check if Twitter is connected
+        if (!user.twitter_provider_id) {
+            return res.status(400).json({ 
+                error: 'Twitter not connected',
+                message: 'Please connect X/Twitter first'
+            });
+        }
+        
+        // Mark Twitter as followed
+        const { error: updateError } = await supabase
+            .from('users')
+            .update({
+                twitter_followed: true,
+                twitter_followed_at: new Date().toISOString(),
+                updated_at: new Date().toISOString()
+            })
+            .eq('id', user.id);
+        
+        if (updateError) throw updateError;
+        
+        console.log(`✅ Twitter follow verified for user: ${user.id}`);
+        
+        res.json({ 
+            success: true, 
+            message: 'Twitter follow verified successfully'
+        });
+        
+    } catch (error) {
+        console.error('Error verifying Twitter follow:', error);
+        res.status(500).json({ error: 'Failed to verify Twitter follow' });
+    }
+});
+
+// NEW: Link Wallet to existing Discord session
+app.post('/api/link-wallet-to-session', async (req, res) => {
+    if (!supabase) {
+        return res.status(503).json({ error: 'Database not available' });
+    }
+    
+    const { discordUserId, walletAddress } = req.body;
+    
+    if (!discordUserId || !walletAddress) {
+        return res.status(400).json({ error: 'Discord user ID and wallet address are required' });
+    }
+    
+    try {
+        // 1. Check if wallet is already used in ANY account
+        const { data: existingWallet } = await supabase
+            .from('users')
+            .select('id, discord_provider_id')
+            .eq('wallet_address', walletAddress)
+            .single();
+        
+        if (existingWallet) {
+            return res.status(400).json({ 
+                error: 'This wallet address is already connected to another account',
+                message: 'Please use a different wallet address'
+            });
+        }
+        
+        // 2. Find user by Discord ID
+        const { data: user, error: findError } = await supabase
+            .from('users')
+            .select('*')
+            .eq('discord_provider_id', discordUserId)
+            .single();
+        
+        if (findError || !user) {
+            return res.status(404).json({ 
+                error: 'Discord session not found',
+                message: 'Please connect Discord first'
+            });
+        }
+        
+        // 3. Check if user has Twitter connected (required before wallet)
+        if (!user.twitter_provider_id) {
+            return res.status(400).json({ 
+                error: 'X/Twitter not connected',
+                message: 'Please connect X/Twitter before submitting wallet'
+            });
+        }
+        
+        // 4. Generate referral code if doesn't exist
+        let referralCode = user.referral_code;
+        if (!referralCode) {
+            referralCode = user.id.replace(/-/g, '').substring(0, 8).toUpperCase();
+            console.log(`🎯 Generated referral code: ${referralCode} for user: ${user.id}`);
+        }
+        
+        // 5. Add wallet and referral code to the same UUID
+        const { error: updateError } = await supabase
+            .from('users')
+            .update({
+                wallet_address: walletAddress,
+                wallet_connected_at: new Date().toISOString(),
+                referral_code: referralCode,
+                updated_at: new Date().toISOString()
+            })
+            .eq('id', user.id);
+        
+        if (updateError) throw updateError;
+        
+        console.log(`✅ Wallet linked to Discord session: ${user.id}`);
+        console.log(`✅ Referral code set: ${referralCode}`);
+        
+        // 6. AUTO-COMPLETE REFERRAL: If user was referred, increment referrer's count
+        if (user.referred_by) {
+            console.log(`🎯 User was referred by: ${user.referred_by}, updating referrer count...`);
+            
+            // Get referrer's current count
+            const { data: referrerData } = await supabase
+                .from('users')
+                .select('referral_completed_count, discord_username')
+                .eq('referral_code', user.referred_by)
+                .maybeSingle();
+            
+            if (referrerData) {
+                const newCompletedCount = (referrerData.referral_completed_count || 0) + 1;
+                
+                // Increment referrer's completed count
+                const { error: updateReferrerError } = await supabase
+                    .from('users')
+                    .update({ 
+                        referral_completed_count: newCompletedCount
+                    })
+                    .eq('referral_code', user.referred_by);
+                
+                if (!updateReferrerError) {
+                    console.log(`✅ Referral completed! Referrer ${user.referred_by} (${referrerData.discord_username}) now has ${newCompletedCount} completed referrals`);
+                } else {
+                    console.error('❌ Error updating referrer count:', updateReferrerError);
+                }
+            } else {
+                console.log(`⚠️ Referrer not found for code: ${user.referred_by}`);
+            }
+        }
+        
+        res.json({ 
+            success: true, 
+            message: 'Wallet address saved successfully',
+            userId: user.id,
+            referralCode: referralCode
+        });
+        
+    } catch (error) {
+        console.error('Error linking wallet to session:', error);
+        res.status(500).json({ error: 'Failed to save wallet address' });
+    }
+});
+
+// NEW: Get session by Discord ID
+app.get('/api/session/:discordUserId', async (req, res) => {
+    if (!supabase) {
+        return res.status(503).json({ error: 'Database not available' });
+    }
+    
+    try {
+        const { discordUserId } = req.params;
+        
+        const { data: user, error } = await supabase
+            .from('users')
+            .select('*')
+            .eq('discord_provider_id', discordUserId)
+            .single();
+        
+        if (error || !user) {
+            return res.status(404).json({ 
+                success: false,
+                error: 'Session not found'
+            });
+        }
+        
+        // Determine task states
+        const discordCompleted = !!user.discord_provider_id && !!user.discord_joined;
+        const twitterConnected = !!user.twitter_provider_id;
+        const twitterFollowed = !!user.twitter_followed; // Check if user verified follow
+        const walletConnected = !!user.wallet_address;
+        
+        res.json({
+            success: true,
+            session: {
+                id: user.id,
+                discord_connected: !!user.discord_provider_id,
+                discord_joined: !!user.discord_joined,
+                twitter_connected: twitterConnected,
+                twitter_followed: twitterFollowed,
+                wallet_connected: walletConnected,
+                tasks: {
+                    discord: discordCompleted ? 'completed' : 'in_progress',
+                    twitter: walletConnected ? 'completed' : (twitterFollowed ? 'unlocked' : (discordCompleted ? 'unlocked' : 'locked')),
+                    wallet: walletConnected ? 'completed' : (twitterFollowed ? 'unlocked' : 'locked')
+                }
+            }
+        });
+        
+    } catch (error) {
+        console.error('Error getting session:', error);
+        res.status(500).json({ error: 'Failed to get session' });
+    }
+});
+
+// OLD: Submit wallet address (DEPRECATED - use /api/link-wallet-to-session instead)
 app.post('/api/submit-wallet', async (req, res) => {
     if (!supabase) {
         return res.status(503).json({ error: 'Database not available' });
@@ -1980,6 +2224,287 @@ app.use(express.static('.'));
 // Serve index.html for root route
 app.get('/', (req, res) => {
     res.sendFile(__dirname + '/index.html');
+});
+
+// ============================================
+// REFERRAL SYSTEM ENDPOINTS
+// ============================================
+
+// Get user's referral info
+app.get('/api/referral/:discordUserId', async (req, res) => {
+    if (!supabase) {
+        return res.status(503).json({ error: 'Database not available' });
+    }
+    
+    try {
+        const { discordUserId } = req.params;
+        
+        console.log('🔍 Fetching referral info for Discord ID:', discordUserId);
+        
+        // Get user with referral data
+        const { data: user, error } = await supabase
+            .from('users')
+            .select('id, referral_code, referral_completed_count, wallet_address, discord_joined, twitter_provider_id')
+            .eq('discord_provider_id', discordUserId)
+            .maybeSingle();
+        
+        console.log('📊 Database query result:', { user, error });
+        
+        if (error) {
+            console.error('❌ Database error:', error);
+            return res.status(500).json({ error: 'Database query failed', details: error.message });
+        }
+        
+        if (!user) {
+            console.log('❌ User not found in database for Discord ID:', discordUserId);
+            return res.status(404).json({ error: 'User not found', discordUserId });
+        }
+        
+        // Check if user has completed ALL tasks (Discord joined, Twitter connected, Wallet submitted)
+        const hasCompletedAllTasks = !!user.discord_joined && !!user.twitter_provider_id && !!user.wallet_address;
+        
+        console.log('🔍 Referral check for user:', discordUserId);
+        console.log('📊 Task status:', {
+            discord_joined: !!user.discord_joined,
+            twitter_provider_id: !!user.twitter_provider_id,
+            wallet_address: !!user.wallet_address,
+            hasCompletedAllTasks
+        });
+        
+        // Generate referral code if doesn't exist
+        let referralCode = user.referral_code;
+        if (!referralCode && hasCompletedAllTasks) {
+            // Generate code from user ID
+            referralCode = user.id.replace(/-/g, '').substring(0, 8).toUpperCase();
+            
+            // Update user with referral code
+            const { error: updateError } = await supabase
+                .from('users')
+                .update({ referral_code: referralCode })
+                .eq('id', user.id);
+            
+            if (updateError) {
+                console.error('Error updating referral code:', updateError);
+            }
+        }
+        
+        res.json({
+            success: true,
+            referralCode: hasCompletedAllTasks ? referralCode : null,
+            referralCount: user.referral_completed_count || 0,
+            hasCompletedAllTasks,
+            referralLink: hasCompletedAllTasks ? `${BASE_URL}?ref=${referralCode}` : null
+        });
+        
+    } catch (error) {
+        console.error('Error getting referral info:', error);
+        res.status(500).json({ error: 'Failed to get referral info' });
+    }
+});
+
+// Apply referral code when user signs up
+app.post('/api/apply-referral', async (req, res) => {
+    if (!supabase) {
+        return res.status(503).json({ error: 'Database not available' });
+    }
+    
+    try {
+        const { discordUserId, referralCode } = req.body;
+        
+        console.log(`🔍 Apply referral request:`, { discordUserId, referralCode });
+        
+        if (!discordUserId || !referralCode) {
+            return res.status(400).json({ error: 'Discord user ID and referral code required' });
+        }
+        
+        // Check if referral code exists
+        const { data: referrer, error: referrerError } = await supabase
+            .from('users')
+            .select('id, referral_code, discord_username')
+            .eq('referral_code', referralCode.toUpperCase())
+            .maybeSingle();
+        
+        console.log(`📊 Referrer query:`, { referrer, referrerError });
+        
+        if (referrerError || !referrer) {
+            console.log('❌ Invalid referral code:', referralCode);
+            return res.status(404).json({ error: 'Invalid referral code' });
+        }
+        
+        console.log(`✅ Found referrer: ${referrer.discord_username} (${referrer.referral_code})`);
+        
+        // Get the user being referred
+        const { data: user, error: userError } = await supabase
+            .from('users')
+            .select('id, referred_by, discord_provider_id, discord_username')
+            .eq('discord_provider_id', discordUserId)
+            .maybeSingle();
+        
+        console.log(`📊 User being referred query:`, { user, userError });
+        
+        if (userError) {
+            console.error('❌ Database error finding user:', userError);
+            return res.status(500).json({ error: 'Database error', details: userError.message });
+        }
+        
+        if (!user) {
+            console.log('❌ User not found for Discord ID:', discordUserId);
+            return res.status(404).json({ error: 'User not found' });
+        }
+        
+        console.log(`📋 User being referred: ${user.discord_username}, already has referrer: ${user.referred_by || 'none'}`);
+        
+        // Check if user already has a referrer
+        if (user.referred_by) {
+            console.log(`⚠️ User already referred by: ${user.referred_by}`);
+            return res.status(400).json({ error: 'User already has a referrer' });
+        }
+        
+        // Check if user is trying to refer themselves
+        if (referrer.id === user.id) {
+            console.log('❌ User trying to refer themselves');
+            return res.status(400).json({ error: 'Cannot refer yourself' });
+        }
+        
+        // Apply referral code
+        const { error: updateError } = await supabase
+            .from('users')
+            .update({ 
+                referred_by: referralCode.toUpperCase()
+            })
+            .eq('id', user.id);
+        
+        if (updateError) {
+            throw updateError;
+        }
+        
+        // Increment referrer's total referral count
+        const { data: referrerData, error: fetchError } = await supabase
+            .from('users')
+            .select('referral_count')
+            .eq('id', referrer.id)
+            .maybeSingle();
+        
+        if (fetchError) {
+            console.error('❌ Error fetching referrer data:', fetchError);
+        }
+        
+        const newCount = (referrerData?.referral_count || 0) + 1;
+        
+        console.log(`📊 Updating referrer count from ${referrerData?.referral_count || 0} to ${newCount}`);
+        
+        const { error: countError } = await supabase
+            .from('users')
+            .update({ 
+                referral_count: newCount
+            })
+            .eq('id', referrer.id);
+        
+        if (countError) {
+            console.error('❌ Error updating referral count:', countError);
+        } else {
+            console.log(`✅ Referrer count updated to ${newCount}`);
+        }
+        
+        console.log(`✅ Referral applied: ${user.discord_provider_id} referred by ${referralCode}`);
+        
+        res.json({ 
+            success: true, 
+            message: 'Referral code applied successfully'
+        });
+        
+    } catch (error) {
+        console.error('❌ Error applying referral:', error);
+        console.error('Error stack:', error.stack);
+        res.status(500).json({ 
+            error: 'Failed to apply referral code',
+            details: error.message,
+            stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+        });
+    }
+});
+
+// Update referral count when user completes all tasks
+app.post('/api/complete-referral', async (req, res) => {
+    if (!supabase) {
+        return res.status(503).json({ error: 'Database not available' });
+    }
+    
+    try {
+        const { discordUserId } = req.body;
+        
+        console.log(`🔍 Complete referral request for Discord ID: ${discordUserId}`);
+        
+        // Get user with referral data
+        const { data: user, error } = await supabase
+            .from('users')
+            .select('id, referred_by, wallet_address, discord_username')
+            .eq('discord_provider_id', discordUserId)
+            .maybeSingle();
+        
+        console.log(`📊 User query result:`, { user, error });
+        
+        if (error) {
+            console.error('❌ Database error:', error);
+            return res.status(500).json({ error: 'Database error', details: error.message });
+        }
+        
+        if (!user) {
+            console.log('❌ User not found for Discord ID:', discordUserId);
+            return res.status(404).json({ error: 'User not found' });
+        }
+        
+        console.log(`📋 User data:`, {
+            username: user.discord_username,
+            has_wallet: !!user.wallet_address,
+            referred_by: user.referred_by
+        });
+        
+        // Check if user completed all tasks and was referred
+        if (user.wallet_address && user.referred_by) {
+            console.log(`🎯 User ${discordUserId} completed all tasks, updating referrer: ${user.referred_by}`);
+            
+            // Get referrer's current count
+            const { data: referrerData } = await supabase
+                .from('users')
+                .select('referral_completed_count')
+                .eq('referral_code', user.referred_by)
+                .single();
+            
+            const newCompletedCount = (referrerData?.referral_completed_count || 0) + 1;
+            
+            // Increment referrer's completed count
+            const { error: updateError } = await supabase
+                .from('users')
+                .update({ 
+                    referral_completed_count: newCompletedCount
+                })
+                .eq('referral_code', user.referred_by);
+            
+            if (updateError) {
+                console.error('❌ Error updating referral completed count:', updateError);
+                return res.status(500).json({ error: 'Failed to update referral count' });
+            }
+            
+            console.log(`✅ Referral completed! Referrer ${user.referred_by} now has ${newCompletedCount} completed referrals`);
+            
+            res.json({ 
+                success: true, 
+                message: 'Referral completed',
+                newCount: newCompletedCount
+            });
+        } else {
+            console.log(`ℹ️ User ${discordUserId} not referred or tasks not completed`);
+            res.json({ 
+                success: false, 
+                message: 'User not referred or tasks not completed'
+            });
+        }
+        
+    } catch (error) {
+        console.error('Error completing referral:', error);
+        res.status(500).json({ error: 'Failed to complete referral' });
+    }
 });
 
 app.listen(PORT, () => {
