@@ -175,7 +175,7 @@ async function loadSessionFromDiscord(discordUserId) {
                     verifyBtn.style.display = 'inline-block';
                     verifyBtn.innerHTML = '<span class="button-text">✓ Completed</span>';
                     verifyBtn.disabled = true;
-                    verifyBtn.style.backgroundColor = '#10b981';
+                    verifyBtn.style.backgroundColor = '#5d43ef';
                     console.log('✅ Discord verify button shown as completed');
                 }
                 
@@ -221,7 +221,7 @@ async function loadSessionFromDiscord(discordUserId) {
                     verifyBtn.style.display = 'inline-block';
                     verifyBtn.innerHTML = '<span class="button-text">✓ Completed</span>';
                     verifyBtn.disabled = true;
-                    verifyBtn.style.backgroundColor = '#10b981';
+                    verifyBtn.style.backgroundColor = '#5d43ef';
                     console.log('✅ X verify button shown as completed');
                 }
             } else if (session.twitter_connected) {
@@ -260,11 +260,17 @@ async function loadSessionFromDiscord(discordUserId) {
                 if (addressInput) {
                     addressInput.value = session.wallet_address || '';
                     addressInput.disabled = true;
+                    
+                    // Show the 'Submit Your Wallet Address' text
+                    const addressText = document.querySelector('#task-address p');
+                    if (addressText) {
+                        addressText.style.display = 'block';
+                    }
                 }
                 if (submitBtn) {
                     submitBtn.innerHTML = '<span class="button-text">✓ Submitted</span>';
                     submitBtn.disabled = true;
-                    submitBtn.style.backgroundColor = '#10b981';
+                    submitBtn.style.backgroundColor = '#5d43ef';
                 }
                 console.log('✅ Wallet shown as completed');
             }
@@ -528,7 +534,7 @@ async function checkUserCurrentStatusByDiscord(discordUserId) {
                     if (verifyBtn) {
                         verifyBtn.innerHTML = '<span class="button-text">✓ Completed</span>';
                         verifyBtn.disabled = true;
-                        verifyBtn.style.backgroundColor = '#10b981';
+                        verifyBtn.style.backgroundColor = '#5d43ef';
                         verifyBtn.style.display = 'inline-block';
                     }
                     
@@ -1026,7 +1032,13 @@ function updateTaskUI(taskType) {
             submitButton.disabled = true;
         }
         
-        // Also hide the input field
+        // Show the 'Submit Your Wallet Address' text
+        const addressText = taskItem.querySelector('p');
+        if (addressText) {
+            addressText.style.display = 'block';
+        }
+        
+        // Hide the input field
         const input = taskItem.querySelector('input');
         if (input) {
             input.style.display = 'none';
@@ -1312,14 +1324,14 @@ async function copyReferralLink() {
         await navigator.clipboard.writeText(referralInput.value);
         
         // Visual feedback
-        const originalText = copyBtn.textContent;
-        copyBtn.textContent = '✓ COPIED';
-        copyBtn.style.backgroundColor = '#10b981';
+        const originalHTML = copyBtn.innerHTML;
+        copyBtn.innerHTML = '<span class="copy-referral-btn-icon">✓</span>';
+        copyBtn.style.backgroundColor = '#5d43ef';
         
         showNotification('Referral link copied to clipboard!', 'success');
         
         setTimeout(() => {
-            copyBtn.textContent = originalText;
+            copyBtn.innerHTML = originalHTML;
             copyBtn.style.backgroundColor = '';
         }, 2000);
         
@@ -1734,7 +1746,7 @@ async function verifyTwitterFollow() {
             if (verifyBtn) {
                 verifyBtn.innerHTML = '<span class="button-text">✓ Completed</span>';
                 verifyBtn.disabled = true;
-                verifyBtn.style.backgroundColor = '#10b981';
+                verifyBtn.style.backgroundColor = '#5d43ef';
             }
             
             showNotification('Twitter follow verified! Task completed.', 'success');
@@ -1758,7 +1770,7 @@ async function verifyTwitterFollow() {
             if (verifyBtn) {
                 verifyBtn.innerHTML = '<span class="button-text">✓ Completed</span>';
                 verifyBtn.disabled = true;
-                verifyBtn.style.backgroundColor = '#10b981';
+                verifyBtn.style.backgroundColor = '#5d43ef';
             }
             
             showNotification('Twitter follow verified! Task completed.', 'success');
@@ -1782,7 +1794,7 @@ async function verifyTwitterFollow() {
         if (verifyBtn) {
             verifyBtn.innerHTML = '<span class="button-text">✓ Completed</span>';
             verifyBtn.disabled = true;
-            verifyBtn.style.backgroundColor = '#10b981';
+            verifyBtn.style.backgroundColor = '#5d43ef';
         }
         
         showNotification('Twitter follow verified! Task completed.', 'success');
@@ -1865,7 +1877,7 @@ async function verifyDiscordJoin() {
             if (verifyBtn) {
                 verifyBtn.innerHTML = '<span class="button-text">✓ Completed</span>';
                 verifyBtn.disabled = true;
-                verifyBtn.style.backgroundColor = '#10b981';
+                verifyBtn.style.backgroundColor = '#5d43ef';
             }
             
             // Update task status
@@ -1922,7 +1934,7 @@ async function verifyDiscordJoin() {
                 if (verifyBtn) {
                     verifyBtn.innerHTML = '<span class="button-text">✓ Completed</span>';
                     verifyBtn.disabled = true;
-                    verifyBtn.style.backgroundColor = '#10b981';
+                    verifyBtn.style.backgroundColor = '#5d43ef';
                 }
                 
                 completedTasks.discord = true;

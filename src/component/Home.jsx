@@ -1,6 +1,6 @@
 import './Home.css'
 import { useState, useEffect } from 'react';
-import { Info } from 'lucide-react';
+import { Info, Copy } from 'lucide-react';
 
 function Home() {
   // Helper to call legacy globals safely
@@ -43,19 +43,6 @@ function Home() {
       <button className="rules-button" onClick={() => setRulesPopup(true)}><span><Info className="rules-button-icon"/></span>Rewards</button>
 
         <div className="tasks">
-        {/* Participant Counter */}
-        <div className="participant-counter">
-          <div className="participant-avatars">
-            <div className="avatar-circle"></div>
-            <div className="avatar-circle"></div>
-            <div className="avatar-circle"></div>
-            <div className="avatar-circle"></div>
-            <div className="avatar-circle"></div>
-          </div>
-          <div className="participant-count">
-            <span id="total-participants">0</span> participants joined
-          </div>
-        </div>
         
         <h2>COMPLETE TASKS TO BE ELIGIBLE FOR FIRST NFT DROP</h2>
         
@@ -73,8 +60,8 @@ function Home() {
                 <div className="task-info">
                   <p>Join Our Discord Community</p>
                   <button className="task-button btn2" id="discord-connect-btn" onClick={call('authenticateDiscord')}>CONNECT DISCORD</button>
-                  <button className="task-button btn2" id="discord-join-btn" onClick={call('joinDiscordServer')} style={{ display: 'none', marginTop: 10 }}>JOIN DISCORD SERVER</button>
-                  <button className="task-button btn2" id="discord-verify-btn" onClick={call('verifyDiscordJoin')} style={{ display: 'none', marginTop: 10 }}>VERIFY JOIN</button>
+                  <button className="task-button btn2" id="discord-join-btn" onClick={call('joinDiscordServer')} style={{ display: 'none', marginTop: 3 }}>JOIN DISCORD SERVER</button>
+                  <button className="task-button btn2" id="discord-verify-btn" onClick={call('verifyDiscordJoin')} style={{ display: 'none', marginTop: 3 }}>VERIFY JOIN</button>
                 </div>
               </div>
             </div>
@@ -93,8 +80,8 @@ function Home() {
                 <div className="task-info">
                   <p>Follow Us on X</p>
                   <button className="task-button btn1" id="twitter-connect-btn" onClick={call('authenticateX')} disabled>CONNECT X</button>
-                  <button className="task-button btn1" id="twitter-follow-btn" onClick={call('followTwitter')} style={{display: 'none', marginTop: 10}}>FOLLOW X</button>
-                  <button className="task-button btn1" id="twitter-verify-btn" onClick={call('verifyTwitterFollow')} style={{display: 'none', marginTop: 10}}>VERIFY FOLLOW</button>
+                  <button className="task-button btn1" id="twitter-follow-btn" onClick={call('followTwitter')} style={{display: 'none', marginTop: 3}}>FOLLOW X</button>
+                  <button className="task-button btn1" id="twitter-verify-btn" onClick={call('verifyTwitterFollow')} style={{display: 'none', marginTop: 3}}>VERIFY FOLLOW</button>
                 </div>
               </div>
             </div>
@@ -110,7 +97,7 @@ function Home() {
               </div>
               <div className="task-content">
                 <div className="task-info">
-                  <p>Submit Your Wallet Address</p>
+                  <p style={{display: 'none'}}>Submit Your Wallet Address</p>
                   <input className="address-input" type="text" placeholder="Enter your EVM address" id="evmAddress" disabled />
                   <button className="submit-button" id="wallet-submit-btn" onClick={call('submitAddress')} disabled>SUBMIT</button>
                 </div>
@@ -118,13 +105,27 @@ function Home() {
             </div>
           </div>
         </div>
+
+         {/* Participant Counter */}
+        <div className="participant-counter">
+          <div className="participant-avatars">
+            <div className="avatar-circle"></div>
+            <div className="avatar-circle"></div>
+            <div className="avatar-circle"></div>
+            <div className="avatar-circle"></div>
+            <div className="avatar-circle"></div>
+          </div>
+          <div className="participant-count">
+            <span id="total-participants">0</span> participants joined
+          </div>
+        </div>
       </div>
 
       <div className="refer" id="referral-section">
         <h2>REFER A FRIEND</h2>
-        <p id="referral-description">Share the link with your friends and get rewards</p>
-        
+  
         <div id="referral-content" style={{display: 'none'}}>
+          <div className="referral-content">
           <div className="referral-link-container">
             <input 
               type="text" 
@@ -138,8 +139,13 @@ function Home() {
               className="copy-referral-btn"
               onClick={call('copyReferralLink')}
             >
-              COPY
+              <Copy className="copy-referral-btn-icon"/>
             </button>
+          </div>
+
+          <div className="referral-stats">
+            <p id="referral-count">Referrals: <span id="referral-count-value">0</span></p>
+          </div>
           </div>
           
           <button 
@@ -153,13 +159,10 @@ function Home() {
             SHARE ON X
           </button>
           
-          <div className="referral-stats">
-            <p id="referral-count">Referrals: <span id="referral-count-value">0</span></p>
-          </div>
         </div>
         
         <div id="referral-locked" style={{display: 'block'}}>
-          <p className="referral-locked-text">🔒 Complete all tasks to unlock your referral link</p>
+          <p className="referral-locked-text">Complete all tasks to unlock your referral link</p>
         </div>
       </div>
 
