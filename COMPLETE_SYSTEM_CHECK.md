@@ -23,7 +23,7 @@ This will:
 5. Fix any data inconsistencies
 6. Verify your accounts
 
----
+
 
 ## 🔧 WHAT THE SCRIPT DOES
 
