@@ -30,7 +30,7 @@ function Home() {
 }, [rulesPopup]);
 
   return (
-    <main>
+    <main className="home-main">
 
     <div className="logoContainer">
       <img src="./images/logo.png" alt="LOGO" />

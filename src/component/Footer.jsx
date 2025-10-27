@@ -54,13 +54,9 @@ function Footer() {
                     <img src="/images/icons/x-social-media-round-icon.png" alt="Twitter" className="social-icon" />
                     <span className="social-text">Twitter</span>
                   </a>
-                  <a href="https://discord.gg/neftit" target="_blank" rel="noopener noreferrer" className="social-item">
+                  <a href="https://discord.com/invite/Xc54PrHv7w" target="_blank" rel="noopener noreferrer" className="social-item">
                     <img src="/images/icons/discord-round-color-icon.png" alt="Discord" className="social-icon" />
                     <span className="social-text">Discord</span>
-                  </a>
-                  <a href="#" target="_blank" rel="noopener noreferrer" className="social-item">
-                    <img src="/images/icons/telegram-icon.png" alt="Telegram" className="social-icon" />
-                    <span className="social-text">Telegram</span>
                   </a>
                   <a href="https://www.linkedin.com/company/neftit" target="_blank" rel="noopener noreferrer" className="social-item">
                     <img src="/images/icons/linkedin_icon.png" alt="LinkedIn" className="social-icon" />
