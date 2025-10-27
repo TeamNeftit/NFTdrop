@@ -1199,6 +1199,10 @@ function updateProgress() {
 
 // Notification system
 function showNotification(message, type = 'info') {
+    const t = String(type || 'info').toLowerCase();
+    if (t !== 'error') {
+        return;
+    }
     // Remove existing notifications
     const existingNotification = document.querySelector('.notification');
     if (existingNotification) {
