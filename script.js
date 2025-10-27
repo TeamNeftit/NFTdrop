@@ -20,20 +20,16 @@ let NEFTIT_USERNAME = 'neftitxyz'; // Default fallback
 document.addEventListener('DOMContentLoaded', function() {
     console.log('🚀 NFT Drop page loaded - SCRIPT VERSION 3');
     
-    // Initialize with all tasks locked except Discord
-    updateTaskLocks({
-        discord: 'unlocked',
-        twitter: 'locked',
-        wallet: 'locked'
-    });
+    // Don't initialize locks here - let checkExistingConnections handle it
+    // This prevents overwriting the restored session state
     
     loadConfig();
-    updateProgress();
     loadTaskStates();
     checkOAuthResults();
     checkUserStatus();
-    checkExistingConnections();
+    checkExistingConnections(); // This will set proper locks based on session
     loadParticipantCount();
+    updateProgress();
 });
 
 // Load participant count from server
@@ -176,6 +172,8 @@ async function loadSessionFromDiscord(discordUserId) {
                     verifyBtn.innerHTML = '<span class="button-text">✓ Completed</span>';
                     verifyBtn.disabled = true;
                     verifyBtn.style.backgroundColor = '#5d43ef';
+                    verifyBtn.style.cursor = 'not-allowed';
+                    verifyBtn.style.opacity = '0.7';
                     console.log('✅ Discord verify button shown as completed');
                 }
                 
@@ -222,6 +220,8 @@ async function loadSessionFromDiscord(discordUserId) {
                     verifyBtn.innerHTML = '<span class="button-text">✓ Completed</span>';
                     verifyBtn.disabled = true;
                     verifyBtn.style.backgroundColor = '#5d43ef';
+                    verifyBtn.style.cursor = 'not-allowed';
+                    verifyBtn.style.opacity = '0.7';
                     console.log('✅ X verify button shown as completed');
                 }
             } else if (session.twitter_connected) {
@@ -271,6 +271,8 @@ async function loadSessionFromDiscord(discordUserId) {
                     submitBtn.innerHTML = '<span class="button-text">✓ Submitted</span>';
                     submitBtn.disabled = true;
                     submitBtn.style.backgroundColor = '#5d43ef';
+                    submitBtn.style.cursor = 'not-allowed';
+                    submitBtn.style.opacity = '0.7';
                 }
                 console.log('✅ Wallet shown as completed');
             }
@@ -442,7 +444,30 @@ async function checkUserCurrentStatus(twitterUserId) {
             console.log('🔍 Twitter connected:', result.user.twitter_connected);
             
             // Update completed tasks based on database status
-            if (result.user.twitter_connected) {
+            if (result.user.twitter_followed) {
+                // User has completed the follow task
+                console.log('✅ Twitter followed - showing completed state');
+                currentTwitterUserId = twitterUserId;
+                localStorage.setItem('currentTwitterUserId', twitterUserId);
+                completedTasks.follow = true;
+                updateTaskUI('follow');
+                
+                // Show completed button
+                const connectBtn = document.getElementById('twitter-connect-btn');
+                const followBtn = document.getElementById('twitter-follow-btn');
+                const verifyBtn = document.getElementById('twitter-verify-btn');
+                
+                if (connectBtn) connectBtn.style.display = 'none';
+                if (followBtn) followBtn.style.display = 'none';
+                if (verifyBtn) {
+                    verifyBtn.style.display = 'inline-block';
+                    verifyBtn.innerHTML = '<span class="button-text">✓ Completed</span>';
+                    verifyBtn.disabled = true;
+                    verifyBtn.style.backgroundColor = '#5d43ef';
+                    verifyBtn.style.cursor = 'not-allowed';
+                    verifyBtn.style.opacity = '0.7';
+                }
+            } else if (result.user.twitter_connected) {
                 console.log('✅ Twitter is connected - updating UI');
                 // Store Twitter user ID for later use
                 currentTwitterUserId = twitterUserId;
@@ -1027,9 +1052,11 @@ function updateTaskUI(taskType) {
         // For wallet address task, update the submit button
         const submitButton = taskItem.querySelector('.submit-button');
         if (submitButton) {
-            submitButton.innerHTML = '<span class="button-text">Completed</span><i class="fas fa-check"></i>';
+            submitButton.innerHTML = '<span class="button-text">✓ Submitted</span>';
             submitButton.style.background = 'linear-gradient(to right, #5d43ef, #8a79ec)';
             submitButton.disabled = true;
+            submitButton.style.cursor = 'not-allowed';
+            submitButton.style.opacity = '0.7';
         }
         
         // Show the 'Submit Your Wallet Address' text
@@ -1042,20 +1069,29 @@ function updateTaskUI(taskType) {
         const input = taskItem.querySelector('input');
         if (input) {
             input.style.display = 'none';
+            input.disabled = true;
         }
     } else {
         // For other tasks (X, Discord), update the task button
         const button = taskItem.querySelector('.task-button');
         if (button) {
-            button.innerHTML = '<span class="button-text">Completed</span><i class="fas fa-check"></i>';
+            button.innerHTML = '<span class="button-text">✓ Completed</span>';
             button.style.background = 'linear-gradient(to right, #5d43ef, #8a79ec)';
             button.disabled = true;
+            button.style.cursor = 'not-allowed';
+            button.style.opacity = '0.7';
         }
     }
 }
 
 // Address submission function
 async function submitAddress() {
+    // Check if task is already completed
+    if (completedTasks.address) {
+        console.log('⚠️ Wallet task already completed, ignoring click');
+        return;
+    }
+    
     const addressInput = document.getElementById('evmAddress');
     const address = addressInput.value.trim();
     
@@ -1711,6 +1747,12 @@ function followTwitter() {
 
 // New simplified Twitter verify function (no actual verification)
 async function verifyTwitterFollow() {
+    // Check if task is already completed
+    if (completedTasks.follow) {
+        console.log('⚠️ Twitter task already completed, ignoring click');
+        return;
+    }
+    
     const verifyBtn = document.getElementById('twitter-verify-btn');
     if (verifyBtn) {
         verifyBtn.innerHTML = '<span class="button-text">Verifying...</span>';
@@ -1747,6 +1789,8 @@ async function verifyTwitterFollow() {
                 verifyBtn.innerHTML = '<span class="button-text">✓ Completed</span>';
                 verifyBtn.disabled = true;
                 verifyBtn.style.backgroundColor = '#5d43ef';
+                verifyBtn.style.cursor = 'not-allowed';
+                verifyBtn.style.opacity = '0.7';
             }
             
             showNotification('Twitter follow verified! Task completed.', 'success');
@@ -1771,6 +1815,8 @@ async function verifyTwitterFollow() {
                 verifyBtn.innerHTML = '<span class="button-text">✓ Completed</span>';
                 verifyBtn.disabled = true;
                 verifyBtn.style.backgroundColor = '#5d43ef';
+                verifyBtn.style.cursor = 'not-allowed';
+                verifyBtn.style.opacity = '0.7';
             }
             
             showNotification('Twitter follow verified! Task completed.', 'success');
@@ -1795,6 +1841,8 @@ async function verifyTwitterFollow() {
             verifyBtn.innerHTML = '<span class="button-text">✓ Completed</span>';
             verifyBtn.disabled = true;
             verifyBtn.style.backgroundColor = '#5d43ef';
+            verifyBtn.style.cursor = 'not-allowed';
+            verifyBtn.style.opacity = '0.7';
         }
         
         showNotification('Twitter follow verified! Task completed.', 'success');

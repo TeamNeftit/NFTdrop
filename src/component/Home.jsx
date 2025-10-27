@@ -40,7 +40,7 @@ function Home() {
         <div class="strip strip2"></div>
 
       {/* Rules Button */}
-      <button className="rules-button" onClick={() => setRulesPopup(true)}><span><Info className="rules-button-icon"/></span>Rewards</button>
+      <button className="rules-button" onClick={() => setRulesPopup(true)}><span><Info className="rules-button-icon"/></span></button>
 
         <div className="tasks">
         
@@ -54,7 +54,7 @@ function Home() {
                 <div className="timeline-circle">
                   <span className="checkmark">✓</span>
                 </div>
-                <div className="timeline-line"></div>
+                {/* <div className="timeline-line"></div> */}
               </div>
               <div className="task-content">
                 <div className="task-info">
@@ -74,7 +74,7 @@ function Home() {
                 <div className="timeline-circle">
                   <span className="checkmark">✓</span>
                 </div>
-                <div className="timeline-line"></div>
+                {/* <div className="timeline-line"></div> */}
               </div>
               <div className="task-content">
                 <div className="task-info">
@@ -109,11 +109,21 @@ function Home() {
          {/* Participant Counter */}
         <div className="participant-counter">
           <div className="participant-avatars">
-            <div className="avatar-circle"></div>
-            <div className="avatar-circle"></div>
-            <div className="avatar-circle"></div>
-            <div className="avatar-circle"></div>
-            <div className="avatar-circle"></div>
+            <div className="avatar-circle">
+              <img src="/pfps/profileimg1.jpg" alt="Participant 1" />
+            </div>
+            <div className="avatar-circle">
+              <img src="/pfps/profileimg2.jpg" alt="Participant 2" />
+            </div>
+            <div className="avatar-circle">
+              <img src="/pfps/profileimg3.jpg" alt="Participant 3" />
+            </div>
+            <div className="avatar-circle">
+              <img src="/pfps/profileimg4.jpg" alt="Participant 4" />
+            </div>
+            <div className="avatar-circle">
+              <div className="avatar-plus">+</div>
+            </div>
           </div>
           <div className="participant-count">
             <span id="total-participants">0</span> participants joined
@@ -170,7 +180,7 @@ function Home() {
       <div className="rulesPopUp">
       <div className="rules">
         <button className="close-x-button" onClick={() => setRulesPopup(false)}>&times;</button>
-        <h3>Rewards</h3>
+        <h3>NFT Drop Details</h3>
         <ul>
           <li>Active Discord role holders have higher chances to receive rare & legendary NFTs</li>
           <li>3 rarity tiers: Common, Rare, and Legendary</li>
