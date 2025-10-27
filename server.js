@@ -271,75 +271,8 @@ X_CLIENT_SECRET=your_client_secret_here</pre>
     
     console.log('Redirecting to:', authUrl);
     
-    // Show a loading page with instructions
-    res.send(`
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <title>Connecting to X...</title>
-            <style>
-                body {
-                    font-family: Arial, sans-serif;
-                    background: #000;
-                    color: #fff;
-                    display: flex;
-                    justify-content: center;
-                    align-items: center;
-                    height: 100vh;
-                    margin: 0;
-                }
-                .container {
-                    text-align: center;
-                    max-width: 400px;
-                    padding: 20px;
-                }
-                .spinner {
-                    border: 3px solid #333;
-                    border-top: 3px solid #1da1f2;
-                    border-radius: 50%;
-                    width: 40px;
-                    height: 40px;
-                    animation: spin 1s linear infinite;
-                    margin: 20px auto;
-                }
-                @keyframes spin {
-                    0% { transform: rotate(0deg); }
-                    100% { transform: rotate(360deg); }
-                }
-                .message {
-                    margin: 20px 0;
-                    line-height: 1.5;
-                }
-                .redirect-btn {
-                    background: #1da1f2;
-                    color: white;
-                    border: none;
-                    padding: 12px 24px;
-                    border-radius: 6px;
-                    cursor: pointer;
-                    font-size: 16px;
-                    margin-top: 20px;
-                }
-                .redirect-btn:hover {
-                    background: #0d8bd9;
-                }
-            </style>
-        </head>
-        <body>
-            <div class="container">
-                <h2>Connecting to X (Twitter)</h2>
-                <div class="spinner"></div>
-                <div class="message">
-                    <p>You'll be redirected to X to authorize our app.</p>
-                    <p>If you're already logged into X, you'll just need to click "Authorize" to allow us to follow Neftit on your behalf.</p>
-                </div>
-                <button class="redirect-btn" onclick="window.location.href='${authUrl}'">
-                    Continue to X Authorization
-                </button>
-            </div>
-        </body>
-        </html>
-    `);
+    // Directly redirect to X authorization
+    res.redirect(authUrl);
 });
 
 app.get('/auth/x/callback', async (req, res) => {
@@ -1713,7 +1646,7 @@ app.get('/api/debug/test-x-oauth', async (req, res) => {
                         type: 'X_AUTH_SUCCESS',
                         userId: '${mockUserId}',
                         state: 'test_state'
-                    }, 'http://localhost:3000');
+                    }, '${BASE_URL}');
                     window.close();
                 </script>
                 <p>Test OAuth callback - you can close this window.</p>
@@ -2073,7 +2006,7 @@ app.post('/api/verify-discord-join', discordRateLimitMiddleware, async (req, res
                 console.log(`⚠️ User is PENDING verification - not fully joined yet`);
                 response = {
                     success: false,
-                    message: 'User is pending verification. Please complete the Discord server verification process.',
+                    message: 'Please join the discord and try again!',
                     isMember: false,
                     guildId: targetGuildId,
                     userId: discordUserId,
@@ -2509,6 +2442,7 @@ app.post('/api/complete-referral', async (req, res) => {
 
 app.listen(PORT, () => {
     console.log(`OAuth server running on port ${PORT}`);
-    console.log(`X OAuth: http://localhost:${PORT}/auth/x`);
-    console.log(`Discord OAuth: http://localhost:${PORT}/auth/discord`);
+    console.log(`Base URL: ${BASE_URL}`);
+    console.log(`X OAuth: ${BASE_URL}/auth/x`);
+    console.log(`Discord OAuth: ${BASE_URL}/auth/discord`);
 });

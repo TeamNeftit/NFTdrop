@@ -591,37 +591,108 @@
     width: 100%;
     margin-top: 16px;
     padding: 14px 24px;
-    background: #0b0a14;
-    border: 2px solid #333;
-    border-radius: 8px;
+    background: linear-gradient(135deg, rgba(93, 67, 239, 0.1) 0%, rgba(11, 10, 20, 0.8) 100%);
+    backdrop-filter: blur(10px);
+    border: 2px solid transparent;
+    border-radius: 12px;
     color: white;
     font-weight: 600;
     font-size: 0.95rem;
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 10px;
+    position: relative;
+    overflow: hidden;
+    background-clip: padding-box;
+}
+
+/* Animated gradient border */
+.share-on-x-btn::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 12px;
+    padding: 2px;
+    background: linear-gradient(
+        45deg,
+        #5d43ef,
+        #8b5cf6,
+        #9e37ce,
+        #5d43ef
+    );
+    background-size: 300% 300%;
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    mask-composite: exclude;
+    animation: borderRotate 3s linear infinite;
+    z-index: -1;
+}
+
+/* Glass shine effect */
+.share-on-x-btn::after {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: linear-gradient(
+        45deg,
+        transparent 30%,
+        rgba(255, 255, 255, 0.1) 50%,
+        transparent 70%
+    );
+    transform: rotate(45deg);
+    animation: glassShine 3s ease-in-out infinite;
+}
+
+@keyframes borderRotate {
+    0% {
+        background-position: 0% 50%;
+    }
+    50% {
+        background-position: 100% 50%;
+    }
+    100% {
+        background-position: 0% 50%;
+    }
+}
+
+@keyframes glassShine {
+    0% {
+        transform: translateX(-100%) translateY(-100%) rotate(45deg);
+    }
+    50% {
+        transform: translateX(100%) translateY(100%) rotate(45deg);
+    }
+    100% {
+        transform: translateX(-100%) translateY(-100%) rotate(45deg);
+    }
 }
 
 .share-on-x-btn svg {
     transition: transform 0.3s ease;
+    position: relative;
+    z-index: 1;
 }
 
 .share-on-x-btn:hover {
-    background: #121021;
-    border-color: #5d43ef;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 16px rgba(93, 67, 239, 0.3);
+    background: linear-gradient(135deg, rgba(93, 67, 239, 0.2) 0%, rgba(18, 16, 33, 0.9) 100%);
+    transform: translateY(-3px);
+    box-shadow: 0 8px 24px rgba(93, 67, 239, 0.4), 0 0 40px rgba(93, 67, 239, 0.2);
 }
 
 .share-on-x-btn:hover svg {
-    transform: scale(1.1);
+    transform: scale(1.15) rotate(5deg);
 }
 
 .share-on-x-btn:active {
-    transform: translateY(0);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(93, 67, 239, 0.3);
 }
 
 .referral-stats {
