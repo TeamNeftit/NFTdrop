@@ -885,7 +885,7 @@ main {
 
 @media (max-width: 426px) {
     main {
-        height: 170vh;
+        height: 165vh;
         background-image: none;
         padding: 20px 0;
     }
@@ -1043,7 +1043,7 @@ main {
     .refer {
         width: calc(100% - 40px);
         padding: 16px;
-        margin-bottom: 20px;
+        margin-bottom: 40px;
         gap: 7px;
     }
 
@@ -1184,6 +1184,7 @@ main {
 
     .refer {
         width: 600px;
+        margin-bottom: 100px
     }
 
     .rules-button{
@@ -1215,6 +1216,11 @@ main {
 }
 
 @media (min-width: 770px) and (max-width: 1024px) {
+
+    .refer {
+        margin-bottom: 100px
+    }
+    
     .strip1 {
         transform: rotate(-15deg);
 
