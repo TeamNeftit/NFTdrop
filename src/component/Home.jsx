@@ -122,8 +122,7 @@ function Home() {
       </div>
 
       <div className="refer" id="referral-section">
-        <h2>REFER A FRIEND</h2>
-  
+        <h2>REFER A FRIEND</h2>       
         <div id="referral-content" style={{display: 'none'}}>
           <div className="referral-content">
           <div className="referral-link-container">

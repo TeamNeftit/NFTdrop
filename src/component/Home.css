@@ -850,7 +850,7 @@ main {
 
 @media (max-width: 426px) {
     main {
-        height: 170vh;
+        height: 150vh;
         background-image: none;
     }
 
@@ -973,7 +973,8 @@ main {
     .rules-button{
         font-size: 0.7rem;
         min-width: 110px;
-        margin-left: 0px;
+        margin-left: auto;
+        margin-right: 20px;
         margin-bottom: 10px;
         gap: 5px;
     }
@@ -1007,7 +1008,7 @@ main {
 
 @media (min-width: 427px) and (max-width: 769px) {
     main {
-        height: 170vh;
+        height: 150vh;
     }
 
     .logoContainer{
@@ -1022,8 +1023,8 @@ main {
     }
 
     .timeline-circle {
-        width: 34px;
-        height: 34px;
+        width: 30px;
+        height: 30px;
     }
     
     .timeline-circle .checkmark {
