@@ -52,6 +52,7 @@
   list-style: none;
 }
 .ds-header { display: flex; align-items: center; margin-bottom: 1.5rem; }
+.ds-header .logo { height: 32px; width: auto; object-fit: contain; }
 .ds-title { font-size: 1.25rem; font-weight: 700; margin-left: 0.5rem; }
 .ds-section { margin-top: 1.5rem; }
 .ds-section-label {
@@ -140,6 +141,7 @@
 /* Mobile header */
 .dmh { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; padding: 0.75rem; border-bottom: 1px solid #1e1e2d; background-color: #0B0A14; }
 .dmh-brand { display: flex; align-items: center; gap: 0.75rem; }
+.dmh-brand .logo { height: 28px; width: auto; object-fit: contain; }
 .dmh-title { font-weight: 600; font-size: 1.125rem; }
 .dmh-actions { display: flex; align-items: center; gap: 0.5rem; }
 
