@@ -28,7 +28,14 @@ export default defineConfig(async () => {
     build: {
       outDir: 'dist',
       assetsDir: 'assets',
-      sourcemap: true
+      sourcemap: true,
+      minify: 'terser',
+      terserOptions: {
+        compress: {
+          drop_console: true,
+          drop_debugger: true
+        }
+      }
     },
     css: {
       devSourcemap: true
