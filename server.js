@@ -54,8 +54,94 @@ if (SUPABASE_URL && SUPABASE_URL !== 'your_supabase_url' && SUPABASE_ANON_KEY &&
     console.log('Supabase credentials not provided - running without database');
 }
 
-// Store for state verification
-const stateStore = new Map();
+// Store for state verification - Using Supabase for Vercel serverless compatibility
+const stateStore = {
+    async set(key, value) {
+        if (!supabase) {
+            console.warn('⚠️ Supabase not available, using in-memory store');
+            if (!this._memoryStore) this._memoryStore = new Map();
+            return this._memoryStore.set(key, value);
+        }
+        try {
+            const { error } = await supabase
+                .from('oauth_states')
+                .upsert({
+                    state_key: key,
+                    state_data: value,
+                    created_at: new Date().toISOString(),
+                    expires_at: new Date(Date.now() + 3600000).toISOString() // 1 hour
+                });
+            if (error) throw error;
+        } catch (error) {
+            console.error('Error storing state in Supabase:', error);
+            // Fallback to memory
+            if (!this._memoryStore) this._memoryStore = new Map();
+            this._memoryStore.set(key, value);
+        }
+    },
+    
+    async get(key) {
+        if (!supabase) {
+            return this._memoryStore ? this._memoryStore.get(key) : undefined;
+        }
+        try {
+            const { data, error } = await supabase
+                .from('oauth_states')
+                .select('state_data')
+                .eq('state_key', key)
+                .single();
+            if (error) throw error;
+            return data ? data.state_data : undefined;
+        } catch (error) {
+            console.error('Error getting state from Supabase:', error);
+            return this._memoryStore ? this._memoryStore.get(key) : undefined;
+        }
+    },
+    
+    async has(key) {
+        if (!supabase) {
+            return this._memoryStore ? this._memoryStore.has(key) : false;
+        }
+        try {
+            const { data, error } = await supabase
+                .from('oauth_states')
+                .select('state_key')
+                .eq('state_key', key)
+                .single();
+            return !!data && !error;
+        } catch (error) {
+            return this._memoryStore ? this._memoryStore.has(key) : false;
+        }
+    },
+    
+    async delete(key) {
+        if (!supabase) {
+            return this._memoryStore ? this._memoryStore.delete(key) : false;
+        }
+        try {
+            const { error } = await supabase
+                .from('oauth_states')
+                .delete()
+                .eq('state_key', key);
+            return !error;
+        } catch (error) {
+            console.error('Error deleting state from Supabase:', error);
+            return this._memoryStore ? this._memoryStore.delete(key) : false;
+        }
+    },
+    
+    get size() {
+        return this._memoryStore ? this._memoryStore.size : 0;
+    },
+    
+    entries() {
+        return this._memoryStore ? this._memoryStore.entries() : [];
+    },
+    
+    keys() {
+        return this._memoryStore ? this._memoryStore.keys() : [];
+    }
+};
 
 // Cache for Neftit user ID to avoid repeated API calls
 let neftitUserIdCache = null;
