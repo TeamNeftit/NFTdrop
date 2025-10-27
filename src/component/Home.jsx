@@ -109,11 +109,22 @@ function Home() {
          {/* Participant Counter */}
         <div className="participant-counter">
           <div className="participant-avatars">
-            <div className="avatar-circle"></div>
-            <div className="avatar-circle"></div>
-            <div className="avatar-circle"></div>
-            <div className="avatar-circle"></div>
-            <div className="avatar-circle"></div>
+            <div className="avatar-circle">
+              <img src="/pfps/profileimg1.jpg" alt="Participant 1" />
+            </div>
+            <div className="avatar-circle">
+              <img src="/pfps/profileimg2.jpg" alt="Participant 2" />
+            </div>
+            <div className="avatar-circle">
+              <img src="/pfps/profileimg3.jpg" alt="Participant 3" />
+            </div>
+            <div className="avatar-circle">
+              <img src="/pfps/profileimg4.jpg" alt="Participant 4" />
+            </div>
+            <div className="avatar-circle">
+              <img src="/pfps/profileimg5.jpg" alt="Participant 5" />
+              <div className="avatar-plus">+</div>
+            </div>
           </div>
           <div className="participant-count">
             <span id="total-participants">0</span> participants joined
